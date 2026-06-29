@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; font-family: 'Hanken Grotesk', system-ui, sans-serif; }
+  :root {
+    --bg:#f6f3ec; --surface:#fffdf9; --surface2:#f0ece1; --ink:#221d18; --ink2:#6f6557; --ink3:#a89a86;
+    --line:#e7e1d6; --accent:#c2410c; --accentSoft:#f7e8df; --green:#5b8c5a; --greenSoft:#e7efe4; --amber:#b9842a;
+    --blue:#3f6b9e; --blueBg:#eef2f7; --blueLine:#dbe4ee; --blueInk:#34465c; --heroA:#2a241d; --heroB:#3a3127;
+    --heroInk:#f6f3ec; --workspace:#e6dfd2; --navBg:#fffdf9;
+  }
+  [data-fv-theme="dark"] {
+    --bg:#14110d; --surface:#1e1a15; --surface2:#26211b; --ink:#efeae1; --ink2:#b3a896; --ink3:#857b6d;
+    --line:#2c2720; --accent:#e2622f; --accentSoft:#2e1f17; --green:#6fa56b; --greenSoft:#1c2a1c; --amber:#cda14a;
+    --blue:#6a93c4; --blueBg:#172230; --blueLine:#28384c; --blueInk:#cdd6e0; --heroA:#0f0c08; --heroB:#241e17;
+    --heroInk:#f6f3ec; --workspace:#0c0a07; --navBg:#1a1611;
+  }
+  @keyframes sheetUp { from { transform: translateY(101%); } to { transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .sa::-webkit-scrollbar { width: 0; height: 0; }
+  .sa { scrollbar-width: none; }
+</style>
+</helmet>
+
+<div data-fv-theme="{{ themeAttr }}" style="min-height:100vh;background:var(--workspace);display:flex;flex-direction:column;align-items:center;padding:0 0 40px;transition:background .25s;">
+
+  <!-- dev chrome bar -->
+  <div style="width:100%;max-width:980px;display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px;">
+    <div style="display:flex;align-items:baseline;gap:10px;">
+      <span style="font-family:'Newsreader',serif;font-size:22px;font-weight:600;color:var(--ink);">FitVise</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);">prototype reference</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <select onChange="{{ onJump }}" value="{{ screen }}" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink2);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:7px 10px;">
+        <option value="connect">Connect to AI</option>
+        <option value="onboard">Onboarding wizard</option>
+        <option value="home">Home / Dashboard</option>
+        <option value="workout">Workout · active log</option>
+        <option value="diet">Diet log</option>
+        <option value="metrics">Body metrics</option>
+        <option value="progress">Progress</option>
+        <option value="programme">Programme</option>
+        <option value="journal">Journal</option>
+        <option value="checkin">Check-in summary</option>
+        <option value="settings">Settings</option>
+      </select>
+      <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink2);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:7px 12px;cursor:pointer;">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);"></span>{{ themeLabel }}
+      </button>
+    </div>
+  </div>
+
+  <!-- phone -->
+  <div style="width:392px;height:846px;border-radius:46px;border:8px solid #2a241d;overflow:hidden;position:relative;box-shadow:0 28px 70px rgba(30,22,14,.30),0 6px 16px rgba(30,22,14,.16);background:var(--bg);">
+    <!-- status bar -->
+    <div style="height:48px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 7px;background:var(--bg);position:relative;z-index:5;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--ink);">9:41</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;color:var(--ink);">●●● ￫</span>
+    </div>
+
+    <!-- scroll area -->
+    <div class="sa" style="position:absolute;top:48px;left:0;right:0;bottom:0;overflow-y:auto;background:var(--bg);">
+
+      <!-- ===================== HOME ===================== -->
+      <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:8px 20px 96px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-family:'Newsreader',serif;font-size:23px;color:var(--ink);">Good morning, Arjun</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-top:3px;">Week 6 · Thursday</div>
+          </div>
+          <button onClick="{{ goSettings }}" style="width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:#e9c9a0;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-size:18px;color:#8a5a2a;cursor:pointer;">A</button>
+        </div>
+
+        <!-- hero today -->
+        <div style="margin-top:16px;border-radius:22px;padding:20px;background:linear-gradient(160deg,var(--heroA),var(--heroB));color:var(--heroInk);position:relative;overflow:hidden;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(246,243,236,.65);">Today · Lower A</div>
+          <div style="font-family:'Newsreader',serif;font-size:29px;margin-top:8px;line-height:1.05;">6 exercises<br>~50 minutes</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:16px;">
+            <button onClick="{{ startWorkout }}" style="height:46px;padding:0 22px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-family:'Hanken Grotesk';font-size:15px;font-weight:600;cursor:pointer;">Start workout</button>
+            <button onClick="{{ goWorkout }}" style="height:46px;padding:0 16px;border:1px solid rgba(255,255,255,.25);border-radius:12px;background:transparent;color:var(--heroInk);font-size:13px;font-weight:500;cursor:pointer;">Preview</button>
+          </div>
+          <svg style="position:absolute;right:-22px;bottom:-26px;opacity:.10;" width="150" height="150" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1"><rect x="2" y="9" width="4" height="6" rx="1"/><rect x="18" y="9" width="4" height="6" rx="1"/><path d="M6 12h12"/></svg>
+        </div>
+
+        <!-- streak + check-in row -->
+        <div style="margin-top:14px;display:flex;gap:12px;">
+          <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><path d="M12 2s5 4.5 5 9a5 5 0 0 1-10 0c0-1.5.7-3 1.5-4C8 9 12 6 12 2z"/></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);">Streak</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:var(--ink);margin-top:7px;line-height:1;">18</div>
+            <div style="font-size:12px;color:var(--ink2);margin-top:4px;">days on plan ·  no missed sessions</div>
+          </div>
+          <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5A8.5 8.5 0 0 1 3 11.5 8.5 8.5 0 0 1 11.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);">Check-in</span>
+            </div>
+            <div style="font-family:'Newsreader',serif;font-size:22px;color:var(--ink);margin-top:8px;line-height:1;">Sunday</div>
+            <div style="font-size:12px;color:var(--ink2);margin-top:5px;">in 3 days · with your coach</div>
+          </div>
+        </div>
+
+        <!-- THIS WEEK — C-style strip -->
+        <div style="margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);">This week</span>
+            <span style="font-size:12px;color:var(--ink2);"><b style="color:var(--ink);">2</b> of 5 sessions done</span>
+          </div>
+          <div style="display:flex;gap:7px;">
+            <sc-for list="{{ weekDays }}" as="d" hint-placeholder-count="7">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <sc-if value="{{ d.isDone }}" hint-placeholder-val="{{ false }}"><div style="width:100%;height:40px;border-radius:10px;background:var(--green);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div></sc-if>
+                <sc-if value="{{ d.isNow }}" hint-placeholder-val="{{ false }}"><div style="width:100%;height:40px;border-radius:10px;border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:11px;font-weight:700;font-family:'IBM Plex Mono',monospace;">NOW</div></sc-if>
+                <sc-if value="{{ d.isRest }}" hint-placeholder-val="{{ false }}"><div style="width:100%;height:40px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:10px;">Rest</div></sc-if>
+                <sc-if value="{{ d.isUpcoming }}" hint-placeholder-val="{{ false }}"><div style="width:100%;height:40px;border-radius:10px;border:1px solid var(--line);"></div></sc-if>
+                <sc-if value="{{ d.isCheckin }}" hint-placeholder-val="{{ false }}"><div style="width:100%;height:40px;border-radius:10px;border:1px dashed var(--blue);display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5A8.5 8.5 0 0 1 3 11.5 8.5 8.5 0 0 1 11.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg></div></sc-if>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);">{{ d.d }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- metric tiles -->
+        <div style="margin-top:14px;display:flex;gap:12px;">
+          <button onClick="{{ goProgress }}" style="text-align:left;flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);">Weight</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:600;color:var(--ink);margin-top:4px;">122<span style="font-size:12px;color:var(--ink2);"> kg</span></div>
+            <div style="font-size:12px;color:var(--green);font-weight:600;">↓ 0.8 this week</div>
+            <svg style="margin-top:7px;display:block;" width="100%" height="22" viewBox="0 0 120 22" preserveAspectRatio="none"><polyline points="0,4 20,6 40,5 60,9 80,8 100,13 120,16" fill="none" stroke="var(--green)" stroke-width="2"/></svg>
+          </button>
+          <button onClick="{{ goProgress }}" style="text-align:left;flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);">Waist</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:600;color:var(--ink);margin-top:4px;">49.5<span style="font-size:12px;color:var(--ink2);"> in</span></div>
+            <div style="font-size:12px;color:var(--green);font-weight:600;">↓ 0.5 this week</div>
+            <svg style="margin-top:7px;display:block;" width="100%" height="22" viewBox="0 0 120 22" preserveAspectRatio="none"><polyline points="0,3 20,5 40,7 60,7 80,11 100,12 120,15" fill="none" stroke="var(--green)" stroke-width="2"/></svg>
+          </button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===================== WORKOUT (active log) ===================== -->
+      <sc-if value="{{ isWorkout }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:8px 0 110px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:0 18px;">
+          <button onClick="{{ goHome }}" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div>
+            <div style="font-family:'Newsreader',serif;font-size:21px;color:var(--ink);">Lower A</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Active session · tap to log</div>
+          </div>
+        </div>
+
+        <!-- coach caution band (AI content) -->
+        <div style="margin:14px 18px 0;background:var(--blueBg);border:1px solid var(--blueLine);border-radius:14px;padding:12px 14px;">
+          <div style="display:flex;align-items:center;gap:7px;"><span style="width:18px;height:18px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5A8.5 8.5 0 0 1 3 11.5 8.5 8.5 0 0 1 11.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);">Coach note</span></div>
+          <div style="font-family:'Newsreader',serif;font-style:italic;font-size:14px;line-height:1.45;color:var(--blueInk);margin-top:7px;">Keep RDLs light today — your left knee flagged twice this week.</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;padding:14px 18px 0;">
+          <sc-for list="{{ sessionView }}" as="ex" hint-placeholder-count="6">
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;">
+              <button onClick="{{ ex.open }}" style="width:100%;text-align:left;display:flex;align-items:center;gap:12px;padding:15px 16px;background:transparent;border:none;cursor:pointer;">
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;gap:7px;">
+                    <span style="font-size:16px;font-weight:600;color:var(--ink);">{{ ex.name }}</span>
+                    <sc-if value="{{ ex.pr }}" hint-placeholder-val="{{ false }}"><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);" title="Personal best lift"></span></sc-if>
+                  </div>
+                  <div style="font-size:12px;color:var(--ink3);margin-top:3px;font-family:'IBM Plex Mono',monospace;">{{ ex.target }} · {{ ex.last }}</div>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink2);">{{ ex.doneStr }}</span>
+                <span style="width:8px;height:8px;border-radius:50%;background:var(--accentSoft);border:2px solid var(--accent);"></span>
+              </button>
+              <sc-if value="{{ ex.isOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:4px 16px 16px;border-top:1px solid var(--line);">
+                  <sc-for list="{{ ex.sets }}" as="st" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:5px;padding:9px 0;border-bottom:1px solid var(--line);">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);width:13px;flex:0 0 auto;">{{ st.n }}</span>
+                      <button onClick="{{ st.decW }}" style="width:32px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font-size:18px;cursor:pointer;flex:0 0 auto;">−</button>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--ink);width:32px;text-align:center;flex:0 0 auto;">{{ st.w }}</span>
+                      <button onClick="{{ st.incW }}" style="width:32px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font-size:18px;cursor:pointer;flex:0 0 auto;">+</button>
+                      <span style="color:var(--ink3);font-size:11px;flex:0 0 auto;">kg</span>
+                      <span style="color:var(--ink3);font-size:12px;flex:0 0 auto;">×</span>
+                      <button onClick="{{ st.decR }}" style="width:30px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font-size:16px;cursor:pointer;flex:0 0 auto;">−</button>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--ink);width:20px;text-align:center;flex:0 0 auto;">{{ st.r }}</span>
+                      <button onClick="{{ st.incR }}" style="width:30px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font-size:16px;cursor:pointer;flex:0 0 auto;">+</button>
+                      <button onClick="{{ st.toggle }}" style="margin-left:auto;width:36px;height:38px;border-radius:10px;border:1.5px solid {{ st.checkBorder }};background:{{ st.checkBg }};display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{ st.checkStroke }}" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></button>
+                    </div>
+                  </sc-for>
+                  <button onClick="{{ ex.addSet }}" style="margin-top:12px;width:100%;height:40px;border-radius:10px;border:1px dashed var(--line);background:transparent;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;">+ Add set</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 18px;background:linear-gradient(to top,var(--bg) 70%,transparent);">
+          <button onClick="{{ finishWorkout }}" style="width:100%;height:52px;border:none;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">Finish workout</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===================== DIET ===================== -->
+      <sc-if value="{{ isDiet }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:8px 20px 96px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onClick="{{ goHome }}" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div><div style="font-family:'Newsreader',serif;font-size:21px;color:var(--ink);">Diet journal</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Thursday · 26 Jun</div></div>
+        </div>
+        <div style="margin-top:14px;background:var(--greenSoft);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;color:var(--ink2);">You've logged <b style="color:var(--ink);">2 of 4</b> meals today. No calories, no macros — just what you ate.</div>
+
+        <!-- Morning (filled) -->
+        <div style="margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Morning</span><span style="font-size:11px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">08:10</span></div>
+          <div style="margin-top:8px;font-size:14px;color:var(--ink);line-height:1.45;">3 eggs, 2 toast, black coffee</div>
+          <div style="display:flex;gap:6px;margin-top:10px;"><span style="font-size:11px;font-weight:600;color:var(--green);background:var(--greenSoft);border-radius:20px;padding:5px 11px;">High protein</span></div>
+        </div>
+
+        <!-- Afternoon (filled) -->
+        <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Afternoon</span><span style="font-size:11px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">13:30</span></div>
+          <div style="margin-top:8px;font-size:14px;color:var(--ink);line-height:1.45;">Chicken rice bowl, salad</div>
+          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;"><span style="font-size:11px;font-weight:600;color:var(--green);background:var(--greenSoft);border-radius:20px;padding:5px 11px;">High protein</span><span style="font-size:11px;color:var(--ink2);background:var(--surface2);border-radius:20px;padding:5px 11px;">Sugar craving</span></div>
+        </div>
+
+        <!-- Evening (empty) -->
+        <div style="margin-top:12px;background:var(--surface);border:1px dashed var(--line);border-radius:16px;padding:15px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Evening</div>
+          <input placeholder="What did you eat?" style="margin-top:8px;width:100%;border:none;background:transparent;font-family:'Hanken Grotesk';font-size:14px;color:var(--ink);outline:none;" />
+          <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:5px 11px;">+ High protein</span>
+            <span style="font-size:11px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:5px 11px;">+ Late eating</span>
+            <span style="font-size:11px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:5px 11px;">+ Skipped meal</span>
+          </div>
+        </div>
+        <div style="margin-top:12px;background:var(--surface);border:1px dashed var(--line);border-radius:16px;padding:15px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Night</div>
+          <input placeholder="What did you eat?" style="margin-top:8px;width:100%;border:none;background:transparent;font-family:'Hanken Grotesk';font-size:14px;color:var(--ink);outline:none;" />
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===================== BODY METRICS ===================== -->
+      <sc-if value="{{ isMetrics }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:8px 20px 96px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onClick="{{ goHome }}" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div><div style="font-family:'Newsreader',serif;font-size:21px;color:var(--ink);">Body metrics</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Weekly snapshot</div></div>
+        </div>
+
+        <sc-if value="{{ metricsSaved }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;background:var(--greenSoft);border:1px solid var(--green);border-radius:14px;padding:13px 15px;font-size:14px;color:var(--ink);">Saved. <b>↓ 0.5 kg</b> since last week · Waist unchanged.</div>
+        </sc-if>
+
+        <div style="margin-top:14px;display:flex;gap:12px;">
+          <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Weight (kg)</div>
+            <input value="121.5" style="margin-top:8px;width:100%;border:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:var(--ink);outline:none;" />
+          </div>
+          <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Waist (in)</div>
+            <input value="49.5" style="margin-top:8px;width:100%;border:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:var(--ink);outline:none;" />
+          </div>
+        </div>
+
+        <button onClick="{{ toggleMore }}" style="margin-top:12px;width:100%;text-align:left;background:transparent;border:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;padding:4px 2px;">{{ moreLabel }}</button>
+        <sc-if value="{{ showMore }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;gap:12px;">
+              <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Hip</div><input placeholder="—" style="margin-top:5px;width:100%;border:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:18px;color:var(--ink);outline:none;" /></div>
+              <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Chest</div><input placeholder="—" style="margin-top:5px;width:100%;border:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:18px;color:var(--ink);outline:none;" /></div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Body fat %  ·  directional only — impedance varies</div><input placeholder="—" style="margin-top:5px;width:100%;border:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:18px;color:var(--ink);outline:none;" /></div>
+          </div>
+        </sc-if>
+
+        <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Notes</div>
+          <textarea placeholder="Felt bloated, travel week, period…" style="margin-top:8px;width:100%;height:64px;resize:none;border:none;background:transparent;font-family:'Hanken Grotesk';font-size:14px;color:var(--ink);outline:none;line-height:1.4;"></textarea>
+        </div>
+        <button onClick="{{ saveMetrics }}" style="margin-top:14px;width:100%;height:50px;border:none;border-radius:13px;background:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">Save snapshot</button>
+      </div>
+      </sc-if>
+
+      <!-- ===================== PROGRESS ===================== -->
+      <sc-if value="{{ isProgress }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:8px 20px 96px;">
+        <div style="font-family:'Newsreader',serif;font-size:24px;color:var(--ink);">Progress</div>
+        <div style="display:flex;gap:6px;margin-top:12px;overflow-x:auto;" class="sa">
+          <button onClick="{{ pgWeightTab }}" style="white-space:nowrap;padding:8px 14px;border-radius:20px;border:1px solid {{ pgWeightBorder }};background:{{ pgWeightBg }};color:{{ pgWeightInk }};font-size:13px;font-weight:600;cursor:pointer;">Weight</button>
+          <button onClick="{{ pgWaistTab }}" style="white-space:nowrap;padding:8px 14px;border-radius:20px;border:1px solid {{ pgWaistBorder }};background:{{ pgWaistBg }};color:{{ pgWaistInk }};font-size:13px;font-weight:600;cursor:pointer;">Waist</button>
+          <button onClick="{{ pgConsTab }}" style="white-space:nowrap;padding:8px 14px;border-radius:20px;border:1px solid {{ pgConsBorder }};background:{{ pgConsBg }};color:{{ pgConsInk }};font-size:13px;font-weight:600;cursor:pointer;">Consistency</button>
+          <button onClick="{{ pgWinsTab }}" style="white-space:nowrap;padding:8px 14px;border-radius:20px;border:1px solid {{ pgWinsBorder }};background:{{ pgWinsBg }};color:{{ pgWinsInk }};font-size:13px;font-weight:600;cursor:pointer;">Victories</button>
+        </div>
+
+        <!-- weight/waist chart -->
+        <sc-if value="{{ pgShowLine }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">{{ pgChartLabel }} · 12 weeks</span><span style="font-size:12px;color:var(--green);font-weight:600;">{{ pgChartDelta }}</span></div>
+            <svg style="margin-top:14px;display:block;width:100%;" height="160" viewBox="0 0 320 160" preserveAspectRatio="none">
+              <line x1="0" y1="40" x2="320" y2="40" stroke="var(--line)" stroke-width="1"/>
+              <line x1="0" y1="80" x2="320" y2="80" stroke="var(--line)" stroke-width="1"/>
+              <line x1="0" y1="120" x2="320" y2="120" stroke="var(--line)" stroke-width="1"/>
+              <polyline points="{{ pgRawPts }}" fill="none" stroke="var(--ink3)" stroke-width="1.5" opacity="0.5"/>
+              <polyline points="{{ pgAvgPts }}" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="300" cy="{{ pgLastY }}" r="4" fill="var(--green)"/>
+            </svg>
+            <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);margin-top:4px;"><span>W1</span><span>W4</span><span>W8</span><span>W12</span></div>
+            <div style="display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--ink2);"><span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:2px;background:var(--green);"></span>7-day average</span><span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:2px;background:var(--ink3);"></span>daily reading</span></div>
+          </div>
+        </sc-if>
+
+        <!-- consistency heatmap -->
+        <sc-if value="{{ pgShowCons }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;">Session calendar · 12 weeks</div>
+            <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:5px;">
+              <sc-for list="{{ heat }}" as="c" hint-placeholder-count="84">
+                <div style="aspect-ratio:1;border-radius:4px;background:{{ c.color }};"></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;font-size:11px;color:var(--ink2);">
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;background:#7c9fc9;"></span>Pull</span>
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;background:var(--accent);"></span>Push</span>
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;background:var(--green);"></span>Lower</span>
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;background:var(--amber);"></span>Full</span>
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;background:var(--surface2);"></span>Rest / missed</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- victories -->
+        <sc-if value="{{ pgShowWins }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:12px;">
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;"><div style="font-family:'Newsreader',serif;font-size:20px;color:var(--ink);line-height:1.25;">Belt moved a notch.</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);margin-top:8px;">24 JUN</div></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;"><div style="font-family:'Newsreader',serif;font-size:20px;color:var(--ink);line-height:1.25;">Climbed 3 floors without stopping.</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);margin-top:8px;">19 JUN</div></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;"><div style="font-family:'Newsreader',serif;font-size:20px;color:var(--ink);line-height:1.25;">First time hitting 60 kg RDL.</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);margin-top:8px;">12 JUN</div></div>
+          </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ===================== PROGRAMME ===================== -->
+      <sc-if value="{{ isProgramme }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:8px 20px 96px;">
+        <div style="font-family:'Newsreader',serif;font-size:24px;color:var(--ink);">Programme</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Week 6 of 12 · Recomposition</span></div>
+        <div style="margin-top:10px;height:6px;border-radius:4px;background:var(--surface2);overflow:hidden;"><div style="width:50%;height:100%;background:var(--accent);"></div></div>
+
+        <!-- AI-authored banner -->
+        <div style="margin-top:16px;background:var(--blueBg);border:1px solid var(--blueLine);border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:10px;">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;flex:0 0 auto;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5A8.5 8.5 0 0 1 3 11.5 8.5 8.5 0 0 1 11.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg></span>
+          <span style="font-size:12.5px;color:var(--blueInk);line-height:1.4;">Authored by your coach. Ask to adjust in your AI client.</span>
+        </div>
+
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">
+          <div style="background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;"><span style="width:9px;height:9px;border-radius:50%;background:var(--green);"></span><div style="flex:1;"><div style="font-size:15px;font-weight:600;color:var(--ink);">Tue · Upper Pull</div><div style="font-size:12px;color:var(--ink3);">6 exercises · done</div></div></div>
+          <div style="background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;"><span style="width:9px;height:9px;border-radius:50%;background:var(--green);"></span><div style="flex:1;"><div style="font-size:15px;font-weight:600;color:var(--ink);">Wed · Upper Push</div><div style="font-size:12px;color:var(--ink3);">6 exercises · done</div></div></div>
+          <button onClick="{{ goWorkout }}" style="text-align:left;background:var(--surface);border:1.5px solid var(--accent);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;"><span style="width:9px;height:9px;border-radius:50%;border:2px solid var(--accent);"></span><div style="flex:1;"><div style="font-size:15px;font-weight:600;color:var(--ink);">Thu · Lower A</div><div style="font-size:12px;color:var(--accent);">Today · tap to open</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;"><span style="width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink3);"></span><div style="flex:1;"><div style="font-size:15px;font-weight:600;color:var(--ink);">Fri · Lower B</div><div style="font-size:12px;color:var(--ink3);">6 exercises</div></div></div>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;"><span style="width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink3);"></span><div style="flex:1;"><div style="font-size:15px;font-weight:600;color:var(--ink);">Sat · Full Body</div><div style="font-size:12px;color:var(--ink3);">5 exercises</div></div></div>
+        </div>
+        <div style="margin-top:18px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Exercise library</div>
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">
+          <span style="font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:7px 13px;">Romanian Deadlift</span>
+          <span style="font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:7px 13px;">Goblet Squat</span>
+          <span style="font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:7px 13px;">Lat Pulldown</span>
+          <span style="font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:7px 13px;">+ 24 more</span>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===================== JOURNAL ===================== -->
+      <sc-if value="{{ isJournal }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:8px 20px 96px;">
+        <div style="font-family:'Newsreader',serif;font-size:24px;color:var(--ink);">Journal</div>
+        <div style="display:flex;gap:6px;margin-top:12px;overflow-x:auto;" class="sa">
+          <button onClick="{{ jEnergyTab }}" style="white-space:nowrap;padding:8px 13px;border-radius:20px;border:1px solid {{ jEnergyBorder }};background:{{ jEnergyBg }};color:{{ jEnergyInk }};font-size:13px;font-weight:600;cursor:pointer;">Energy</button>
+          <button onClick="{{ jFlagsTab }}" style="white-space:nowrap;padding:8px 13px;border-radius:20px;border:1px solid {{ jFlagsBorder }};background:{{ jFlagsBg }};color:{{ jFlagsInk }};font-size:13px;font-weight:600;cursor:pointer;">Flags</button>
+          <button onClick="{{ jCheckTab }}" style="white-space:nowrap;padding:8px 13px;border-radius:20px;border:1px solid {{ jCheckBorder }};background:{{ jCheckBg }};color:{{ jCheckInk }};font-size:13px;font-weight:600;cursor:pointer;">Check-ins</button>
+          <button onClick="{{ jInjuryTab }}" style="white-space:nowrap;padding:8px 13px;border-radius:20px;border:1px solid {{ jInjuryBorder }};background:{{ jInjuryBg }};color:{{ jInjuryInk }};font-size:13px;font-weight:600;cursor:pointer;">Injury</button>
+        </div>
+
+        <sc-if value="{{ jShowEnergy }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;">
+            <div style="font-size:14px;color:var(--ink);font-weight:600;">How's your energy today?</div>
+            <div style="display:flex;gap:8px;margin-top:14px;">
+              <sc-for list="{{ faces }}" as="f" hint-placeholder-count="5">
+                <button onClick="{{ f.pick }}" style="flex:1;aspect-ratio:1;border-radius:12px;border:1.5px solid {{ f.border }};background:{{ f.bg }};display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="{{ f.ink }}" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="{{ f.mouth }}"/><circle cx="9" cy="10" r="0.6" fill="{{ f.ink }}"/><circle cx="15" cy="10" r="0.6" fill="{{ f.ink }}"/></svg></button>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:14px;">
+              <div style="flex:1;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Sleep (hrs)</div><input value="7.5" style="margin-top:6px;width:100%;border:1px solid var(--line);border-radius:10px;background:var(--surface2);padding:10px;font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--ink);outline:none;" /></div>
+              <div style="flex:1;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Soreness</div><div style="margin-top:6px;display:flex;gap:5px;"><span style="flex:1;text-align:center;border:1px solid var(--accent);background:var(--accentSoft);color:var(--accent);border-radius:9px;padding:9px 0;font-size:11px;font-weight:600;">Mild</span><span style="flex:1;text-align:center;border:1px solid var(--line);color:var(--ink2);border-radius:9px;padding:9px 0;font-size:11px;">Sig.</span></div></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ jShowFlags }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;">
+            <div style="font-size:14px;color:var(--ink);font-weight:600;">Tag a moment — no judgment</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
+              <span style="font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:8px 13px;">Late night eating</span>
+              <span style="font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:8px 13px;">Sugar craving</span>
+              <span style="font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:8px 13px;">Skipped session</span>
+              <span style="font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:8px 13px;">Stress eating</span>
+              <span style="font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:20px;padding:8px 13px;">Overate at meal</span>
+              <span style="font-size:12px;color:var(--green);background:var(--greenSoft);border:1px solid var(--green);border-radius:20px;padding:8px 13px;font-weight:600;">✓ Good choice moment</span>
+            </div>
+            <div style="margin-top:14px;font-size:12px;color:var(--ink3);line-height:1.5;">These are never shown back to you as counts. Your coach surfaces patterns gently during check-ins.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ jShowCheck }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:12px;">
+            <button onClick="{{ goCheckin }}" style="text-align:left;background:var(--blueBg);border:1px solid var(--blueLine);border-radius:16px;padding:0;overflow:hidden;cursor:pointer;">
+              <div style="background:var(--blue);padding:8px 16px;display:flex;align-items:center;gap:7px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5A8.5 8.5 0 0 1 3 11.5 8.5 8.5 0 0 1 11.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#fff;">Coach check-in</span></div>
+              <div style="padding:14px 16px;"><div style="font-family:'Newsreader',serif;font-size:18px;color:var(--ink);">Week 5 · 22 Jun</div><div style="font-size:13px;color:var(--ink2);margin-top:5px;line-height:1.45;">Strong week — 5/5 sessions, waist down 0.5in. Hold calories, push pulls…</div></div>
+            </button>
+            <div style="background:var(--blueBg);border:1px solid var(--blueLine);border-radius:16px;padding:14px 16px;opacity:.85;"><div style="font-family:'Newsreader',serif;font-size:18px;color:var(--ink);">Week 4 · 15 Jun</div><div style="font-size:13px;color:var(--ink2);margin-top:5px;line-height:1.45;">Travel disrupted week 4. We protected protein and kept 3 sessions…</div></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ jShowInjury }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;background:var(--blueBg);border:1px solid var(--blueLine);border-radius:14px;padding:13px 15px;font-size:13px;color:var(--blueInk);line-height:1.45;">You've noted discomfort in your <b>left knee</b> twice this week. Consider mentioning it to your coach at your next check-in.</div>
+          <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Log discomfort</div>
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px;">
+              <select style="width:100%;border:1px solid var(--line);border-radius:10px;background:var(--surface2);padding:11px;font-family:'Hanken Grotesk';font-size:14px;color:var(--ink);"><option>Left Knee</option><option>Right Shoulder</option><option>Lower Back</option></select>
+              <div style="display:flex;gap:6px;"><span style="flex:1;text-align:center;border:1px solid var(--line);color:var(--ink2);border-radius:9px;padding:9px 0;font-size:12px;">Pain</span><span style="flex:1;text-align:center;border:1px solid var(--accent);background:var(--accentSoft);color:var(--accent);border-radius:9px;padding:9px 0;font-size:12px;font-weight:600;">Discomfort</span><span style="flex:1;text-align:center;border:1px solid var(--line);color:var(--ink2);border-radius:9px;padding:9px 0;font-size:12px;">Stiffness</span></div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ===================== CHECK-IN DETAIL ===================== -->
+      <sc-if value="{{ isCheckin }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:8px 20px 96px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onClick="{{ goJournal }}" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div style="font-family:'Newsreader',serif;font-size:20px;color:var(--ink);">Check-in · Week 5</div>
+        </div>
+        <div style="margin-top:14px;border:1px solid var(--blueLine);border-radius:18px;overflow:hidden;">
+          <div style="background:var(--blue);padding:14px 18px;"><div style="display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5A8.5 8.5 0 0 1 3 11.5 8.5 8.5 0 0 1 11.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#fff;">Coaching report · 22 Jun</span></div></div>
+          <div style="background:var(--blueBg);padding:18px;">
+            <div style="display:flex;gap:20px;">
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Weight</div><div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:var(--ink);">122<span style="font-size:11px;"> kg</span></div></div>
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Waist</div><div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:var(--ink);">49.5<span style="font-size:11px;"> in</span></div></div>
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Sessions</div><div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:var(--ink);">5/5</div></div>
+            </div>
+            <div style="margin-top:16px;font-family:'Newsreader',serif;font-size:16px;font-style:italic;line-height:1.55;color:var(--blueInk);">"Really strong week. The waist is finally moving and your pulls jumped 5kg. Two left-knee flags — we'll keep RDLs lighter and add a glute warm-up. Hold your calories where they are; the trend is doing the work."</div>
+            <div style="margin-top:16px;border-top:1px solid var(--blueLine);padding-top:14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);">Next week's targets</div><div style="margin-top:8px;font-size:14px;color:var(--ink);line-height:1.6;">· Hold daily intake · Add glute activation pre-leg day · Aim 5 sessions · Re-measure Sunday</div></div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===================== SETTINGS ===================== -->
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:8px 20px 96px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onClick="{{ goHome }}" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div style="font-family:'Newsreader',serif;font-size:22px;color:var(--ink);">Settings</div>
+        </div>
+
+        <div style="margin-top:16px;display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;">
+          <div style="width:48px;height:48px;border-radius:50%;background:#e9c9a0;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-size:22px;color:#8a5a2a;">A</div>
+          <div style="flex:1;"><div style="font-size:16px;font-weight:600;color:var(--ink);">Arjun M.</div><div style="font-size:12px;color:var(--ink3);">Recomposition · self-hosted</div></div>
+          <button style="font-size:12px;color:var(--accent);background:transparent;border:none;font-weight:600;cursor:pointer;">Switch user</button>
+        </div>
+
+        <div style="margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;">
+          <div style="padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;"><span style="font-size:14px;color:var(--ink);">Weight units</span><div style="display:flex;gap:4px;"><span style="font-size:12px;padding:6px 12px;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;">kg</span><span style="font-size:12px;padding:6px 12px;border-radius:8px;background:var(--surface2);color:var(--ink2);">lbs</span></div></div>
+          <div style="padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;"><span style="font-size:14px;color:var(--ink);">Length units</span><div style="display:flex;gap:4px;"><span style="font-size:12px;padding:6px 12px;border-radius:8px;background:var(--surface2);color:var(--ink2);">cm</span><span style="font-size:12px;padding:6px 12px;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;">in</span></div></div>
+          <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:14px;color:var(--ink);">Appearance</span><button onClick="{{ toggleTheme }}" style="font-size:12px;padding:6px 12px;border-radius:8px;background:var(--surface2);color:var(--ink);border:1px solid var(--line);font-weight:600;cursor:pointer;">{{ themeLabel }}</button></div>
+        </div>
+
+        <!-- MCP connection -->
+        <div style="margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">AI / MCP connection</span>
+            <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green);font-weight:600;"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);"></span>Connected</span>
+          </div>
+          <div style="font-size:13px;color:var(--ink2);margin-top:10px;line-height:1.5;">Your AI client reads and writes your log through the FitVise MCP server.</div>
+          <button onClick="{{ goConnect }}" style="margin-top:12px;width:100%;height:44px;border:1px solid var(--line);border-radius:11px;background:var(--surface2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;">Connection details</button>
+        </div>
+
+        <div style="margin-top:14px;display:flex;gap:12px;">
+          <button style="flex:1;height:46px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;">Export JSON</button>
+          <button style="flex:1;height:46px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;">Export CSV</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===================== CONNECT TO AI ===================== -->
+      <sc-if value="{{ isConnect }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:8px 20px 40px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);">First run</div>
+        <div style="font-family:'Newsreader',serif;font-size:26px;color:var(--ink);margin-top:6px;line-height:1.15;">Connect your AI coach</div>
+        <div style="font-size:14px;color:var(--ink2);margin-top:8px;line-height:1.5;">FitVise is your journal. The coaching happens in your AI client — let's link them.</div>
+
+        <!-- step 1 -->
+        <div style="margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;">1</span><span style="font-size:15px;font-weight:600;color:var(--ink);">Add FitVise to your AI client</span></div>
+          <div style="font-size:13px;color:var(--ink2);margin-top:10px;line-height:1.5;">Authorize FitVise in Claude (or any MCP client). No keys to copy.</div>
+          <button style="margin-top:12px;width:100%;height:46px;border:none;border-radius:11px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Authorize with OAuth</button>
+        </div>
+
+        <!-- step 2 status -->
+        <div style="margin-top:12px;background:var(--greenSoft);border:1px solid var(--green);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:10px;">
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span>
+          <div><div style="font-size:14px;font-weight:600;color:var(--ink);">Connected</div><div style="font-size:12px;color:var(--ink2);">Claude · authorized just now</div></div>
+        </div>
+
+        <!-- step 3 onboard -->
+        <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;">3</span><span style="font-size:15px;font-weight:600;color:var(--ink);">Start onboarding</span></div>
+          <div style="font-size:13px;color:var(--ink2);margin-top:10px;">In your AI client, run the slash command:</div>
+          <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);background:var(--accentSoft);border:1px solid var(--line);border-radius:10px;padding:11px 13px;">/mcp__fitvise__onboard</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:14px;">No slash commands in your client? Copy this starter prompt:</div>
+          <button onClick="{{ copyPrompt }}" style="margin-top:8px;width:100%;text-align:left;background:var(--surface2);border:1px dashed var(--line);border-radius:12px;padding:13px;cursor:pointer;">
+            <div style="font-size:13px;color:var(--ink);line-height:1.5;font-family:'IBM Plex Mono',monospace;">"I'd like to start onboarding with FitVise. Please read my profile and walk me through setup."</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:10px;color:var(--accent);font-size:12px;font-weight:600;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>{{ copyLabel }}</div>
+          </button>
+          <div style="font-size:11px;color:var(--ink3);margin-top:12px;line-height:1.5;">FitVise can't push a prompt into your AI session — you start the conversation there.</div>
+        </div>
+
+        <button onClick="{{ goOnboard }}" style="margin-top:14px;width:100%;background:transparent;border:none;color:var(--ink2);font-size:13px;text-decoration:underline;cursor:pointer;">Prefer to fill a form instead? Use the in-app wizard</button>
+        <button onClick="{{ goHome }}" style="margin-top:8px;width:100%;height:48px;border:1px solid var(--line);border-radius:13px;background:var(--surface);color:var(--ink);font-size:15px;font-weight:600;cursor:pointer;">Skip to app →</button>
+      </div>
+      </sc-if>
+
+      <!-- ===================== ONBOARDING WIZARD ===================== -->
+      <sc-if value="{{ isOnboard }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:8px 20px 40px;min-height:100%;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onClick="{{ onboardBack }}" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div style="flex:1;"><div style="height:5px;border-radius:4px;background:var(--surface2);overflow:hidden;"><div style="width:{{ onboardPct }};height:100%;background:var(--accent);transition:width .3s;"></div></div></div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);">{{ onboardStepLabel }}</span>
+        </div>
+
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:20px 0;">
+          <sc-if value="{{ ob1 }}" hint-placeholder-val="{{ true }}"><div>
+            <div style="font-family:'Newsreader',serif;font-size:27px;color:var(--ink);line-height:1.2;">What should we call you?</div>
+            <div style="font-size:13px;color:var(--ink3);margin-top:8px;">Used to personalise your space — and how your coach addresses you.</div>
+            <input value="Arjun" style="margin-top:20px;width:100%;border:none;border-bottom:2px solid var(--line);background:transparent;padding:10px 0;font-family:'Newsreader',serif;font-size:24px;color:var(--ink);outline:none;" />
+            <input value="34" style="margin-top:14px;width:100%;border:none;border-bottom:2px solid var(--line);background:transparent;padding:10px 0;font-family:'IBM Plex Mono',monospace;font-size:18px;color:var(--ink);outline:none;" placeholder="Age" />
+          </div></sc-if>
+          <sc-if value="{{ ob2 }}" hint-placeholder-val="{{ false }}"><div>
+            <div style="font-family:'Newsreader',serif;font-size:27px;color:var(--ink);line-height:1.2;">How do you want to train?</div>
+            <div style="font-size:13px;color:var(--ink3);margin-top:8px;">This shapes the whole programme your coach writes.</div>
+            <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px;">
+              <div style="border:1.5px solid var(--accent);background:var(--accentSoft);border-radius:14px;padding:15px;display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🏋️</span><div><div style="font-size:15px;font-weight:600;color:var(--ink);">Gym</div><div style="font-size:12px;color:var(--ink3);">Full equipment access</div></div></div>
+              <div style="border:1px solid var(--line);border-radius:14px;padding:15px;display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🏠</span><div><div style="font-size:15px;font-weight:600;color:var(--ink);">Home workout</div><div style="font-size:12px;color:var(--ink3);">Minimal equipment</div></div></div>
+              <div style="border:1px solid var(--line);border-radius:14px;padding:15px;display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🚶</span><div><div style="font-size:15px;font-weight:600;color:var(--ink);">Walk / run</div><div style="font-size:12px;color:var(--ink3);">Distance &amp; pace based</div></div></div>
+              <div style="border:1px solid var(--line);border-radius:14px;padding:15px;display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🤸</span><div><div style="font-size:15px;font-weight:600;color:var(--ink);">Classes / hybrid</div><div style="font-size:12px;color:var(--ink3);">Zumba, mixed modalities</div></div></div>
+            </div>
+          </div></sc-if>
+          <sc-if value="{{ ob3 }}" hint-placeholder-val="{{ false }}"><div>
+            <div style="font-family:'Newsreader',serif;font-size:27px;color:var(--ink);line-height:1.2;">What's your primary goal?</div>
+            <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px;">
+              <div style="border:1px solid var(--line);border-radius:14px;padding:16px;font-size:15px;font-weight:600;color:var(--ink);">Fat loss</div>
+              <div style="border:1.5px solid var(--accent);background:var(--accentSoft);border-radius:14px;padding:16px;font-size:15px;font-weight:600;color:var(--ink);">Recomposition</div>
+              <div style="border:1px solid var(--line);border-radius:14px;padding:16px;font-size:15px;font-weight:600;color:var(--ink);">Muscle gain</div>
+              <div style="border:1px solid var(--line);border-radius:14px;padding:16px;font-size:15px;font-weight:600;color:var(--ink);">General fitness</div>
+            </div>
+          </div></sc-if>
+          <sc-if value="{{ obOther }}" hint-placeholder-val="{{ false }}"><div style="text-align:center;">
+            <div style="font-family:'Newsreader',serif;font-size:27px;color:var(--ink);line-height:1.2;">Diet, restrictions, days, injuries…</div>
+            <div style="font-size:14px;color:var(--ink2);margin-top:12px;line-height:1.5;">The wizard continues one question per screen — tappable option cards, number inputs, and a single free-text field for injuries &amp; preferences. No dense forms.</div>
+            <div style="margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);">Step {{ onboardStep }} of 8</div>
+          </div></sc-if>
+        </div>
+
+        <button onClick="{{ onboardNext }}" style="width:100%;height:52px;border:none;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">{{ onboardCta }}</button>
+        <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--ink3);">Why we ask: your coach uses this to author your first programme.</div>
+      </div>
+      </sc-if>
+
+    </div>
+
+    <!-- ===================== BOTTOM NAV ===================== -->
+    <sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;left:0;right:0;bottom:0;height:64px;border-top:1px solid var(--line);background:var(--navBg);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px;z-index:8;">
+      <button onClick="{{ goHome }}" style="background:none;border:none;cursor:pointer;padding:8px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ navHomeColor }}" stroke-width="1.9"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg></button>
+      <button onClick="{{ goProgramme }}" style="background:none;border:none;cursor:pointer;padding:8px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ navProgColor }}" stroke-width="1.9"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></button>
+      <button onClick="{{ openLogMenu }}" style="background:none;border:none;cursor:pointer;"><div style="width:48px;height:48px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;margin-top:-16px;box-shadow:0 6px 16px rgba(194,65,12,.4);"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></div></button>
+      <button onClick="{{ goProgress }}" style="background:none;border:none;cursor:pointer;padding:8px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ navProgressColor }}" stroke-width="1.9"><path d="M3 17l5-5 4 4 7-8"/></svg></button>
+      <button onClick="{{ goJournal }}" style="background:none;border:none;cursor:pointer;padding:8px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ navJournalColor }}" stroke-width="1.9"><path d="M6 3h10l4 4v14H6z"/><path d="M9 9h7M9 13h7M9 17h4"/></svg></button>
+    </div>
+    </sc-if>
+
+    <!-- ===================== LOG MENU SHEET ===================== -->
+    <sc-if value="{{ logMenuOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeLogMenu }}" style="position:absolute;inset:0;background:rgba(20,14,8,.45);z-index:20;animation:fadeIn .2s ease;"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:24px 24px 0 0;padding:8px 20px 28px;z-index:21;animation:sheetUp .28s cubic-bezier(.2,.8,.2,1);">
+      <div style="width:38px;height:4px;border-radius:3px;background:var(--line);margin:8px auto 16px;"></div>
+      <div style="font-family:'Newsreader',serif;font-size:20px;color:var(--ink);margin-bottom:14px;">What are you logging?</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button onClick="{{ startWorkout }}" style="display:flex;align-items:center;gap:14px;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:15px;cursor:pointer;text-align:left;"><span style="width:38px;height:38px;border-radius:10px;background:var(--accentSoft);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9"><rect x="2" y="9" width="4" height="6" rx="1"/><rect x="18" y="9" width="4" height="6" rx="1"/><path d="M6 12h12"/></svg></span><span style="font-size:15px;font-weight:600;color:var(--ink);">Workout</span></button>
+        <button onClick="{{ goDiet }}" style="display:flex;align-items:center;gap:14px;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:15px;cursor:pointer;text-align:left;"><span style="width:38px;height:38px;border-radius:10px;background:var(--greenSoft);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.9"><path d="M4 3v18M4 8h6M10 3v18M14 3c-1 4 0 7 2 7s3-3 2-7M16 10v11"/></svg></span><span style="font-size:15px;font-weight:600;color:var(--ink);">Diet</span></button>
+        <button onClick="{{ goMetrics }}" style="display:flex;align-items:center;gap:14px;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:15px;cursor:pointer;text-align:left;"><span style="width:38px;height:38px;border-radius:10px;background:var(--surface);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ink2)" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span style="font-size:15px;font-weight:600;color:var(--ink);">Body metrics</span></button>
+        <button onClick="{{ goJournal }}" style="display:flex;align-items:center;gap:14px;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:15px;cursor:pointer;text-align:left;"><span style="width:38px;height:38px;border-radius:10px;background:var(--blueBg);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.9"><path d="M12 3v18M5 8l7-5 7 5"/></svg></span><span style="font-size:15px;font-weight:600;color:var(--ink);">Energy &amp; recovery</span></button>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== ENERGY SHEET (post-workout) ===================== -->
+    <sc-if value="{{ energyOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeEnergy }}" style="position:absolute;inset:0;background:rgba(20,14,8,.45);z-index:20;animation:fadeIn .2s ease;"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:24px 24px 0 0;padding:8px 20px 28px;z-index:21;animation:sheetUp .28s cubic-bezier(.2,.8,.2,1);">
+      <div style="width:38px;height:4px;border-radius:3px;background:var(--line);margin:8px auto 16px;"></div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);">Workout logged ✓</div>
+      <div style="font-family:'Newsreader',serif;font-size:21px;color:var(--ink);margin-top:6px;">Quick recovery check — 20 seconds</div>
+      <div style="font-size:13px;color:var(--ink2);margin-top:12px;font-weight:600;">Energy right now</div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <sc-for list="{{ faces }}" as="f" hint-placeholder-count="5">
+          <button onClick="{{ f.pick }}" style="flex:1;aspect-ratio:1;border-radius:12px;border:1.5px solid {{ f.border }};background:{{ f.bg }};display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="{{ f.ink }}" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="{{ f.mouth }}"/><circle cx="9" cy="10" r="0.6" fill="{{ f.ink }}"/><circle cx="15" cy="10" r="0.6" fill="{{ f.ink }}"/></svg></button>
+        </sc-for>
+      </div>
+      <button onClick="{{ closeEnergy }}" style="margin-top:18px;width:100%;height:50px;border:none;border-radius:13px;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer;">Done</button>
+      <button onClick="{{ closeEnergy }}" style="margin-top:8px;width:100%;background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;">Skip for now</button>
+    </div>
+    </sc-if>
+
+    <!-- ===================== COACH FAB + SHEET ===================== -->
+    <sc-if value="{{ showCoachFab }}" hint-placeholder-val="{{ true }}">
+    <button onClick="{{ openCoach }}" style="position:absolute;right:18px;bottom:78px;width:50px;height:50px;border-radius:50%;border:none;background:var(--blue);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(63,107,158,.45);cursor:pointer;z-index:9;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg></button>
+    </sc-if>
+    <sc-if value="{{ coachOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeCoach }}" style="position:absolute;inset:0;background:rgba(20,14,8,.45);z-index:20;animation:fadeIn .2s ease;"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:24px 24px 0 0;padding:8px 20px 28px;z-index:21;animation:sheetUp .28s cubic-bezier(.2,.8,.2,1);">
+      <div style="width:38px;height:4px;border-radius:3px;background:var(--line);margin:8px auto 16px;"></div>
+      <div style="display:flex;align-items:center;gap:10px;"><span style="width:34px;height:34px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5A8.5 8.5 0 0 1 3 11.5 8.5 8.5 0 0 1 11.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg></span><div style="font-family:'Newsreader',serif;font-size:20px;color:var(--ink);">Talk to your coach</div></div>
+      <div style="font-size:13px;color:var(--ink2);margin-top:12px;line-height:1.5;">Your coach sees your full history and programme when you start a conversation. This happens in your AI client — not in the app.</div>
+      <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);background:var(--accentSoft);border:1px solid var(--line);border-radius:10px;padding:11px 13px;">/mcp__fitvise__weekly_checkin</div>
+      <button onClick="{{ copyPrompt }}" style="margin-top:10px;width:100%;height:48px;border:none;border-radius:12px;background:var(--blue);color:#fff;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>{{ copyLabel }}</button>
+      <button style="margin-top:10px;width:100%;height:48px;border:1px solid var(--line);border-radius:12px;background:var(--surface2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;">Open my AI client ↗</button>
+    </div>
+    </sc-if>
+
+  </div>
+
+  <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);letter-spacing:.08em;">Tap around · use the dropdown to jump to any screen · toggle theme top-right</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    theme: 'light', screen: 'home',
+    coachOpen: false, logMenuOpen: false, energyOpen: false,
+    onboardStep: 1, progressTab: 'weight', journalTab: 'energy',
+    showMore: false, metricsSaved: false, copied: false,
+    session: null, currentEx: 0, energyPick: 3,
+  };
+
+  go = (name) => this.setState(s => {
+    const st = { screen: name, coachOpen: false, logMenuOpen: false };
+    if (name === 'workout' && !s.session) { st.session = this.buildSession(); st.currentEx = 0; }
+    return st;
+  });
+  toggleTheme = () => this.setState(s => ({ theme: s.theme === 'light' ? 'dark' : 'light' }));
+  onJump = (e) => this.go(e.target.value);
+
+  startWorkout = () => this.setState({ screen: 'workout', session: this.buildSession(), currentEx: 0, logMenuOpen: false });
+  openCoach = () => this.setState({ coachOpen: true });
+  closeCoach = () => this.setState({ coachOpen: false });
+  openLogMenu = () => this.setState({ logMenuOpen: true });
+  closeLogMenu = () => this.setState({ logMenuOpen: false });
+  closeEnergy = () => this.setState({ energyOpen: false });
+  toggleMore = () => this.setState(s => ({ showMore: !s.showMore }));
+  saveMetrics = () => this.setState({ metricsSaved: true });
+  onboardNext = () => this.setState(s => (s.onboardStep >= 8 ? { screen: 'home', onboardStep: 1 } : { onboardStep: s.onboardStep + 1 }));
+  onboardBack = () => this.setState(s => (s.onboardStep <= 1 ? { screen: 'connect' } : { onboardStep: s.onboardStep - 1 }));
+  setProgressTab = (t) => () => this.setState({ progressTab: t });
+  setJournalTab = (t) => () => this.setState({ journalTab: t });
+  pickEnergy = (n) => () => this.setState({ energyPick: n });
+  copyPrompt = () => {
+    try { navigator.clipboard && navigator.clipboard.writeText("I'd like to start onboarding with FitVise. Please read my profile and walk me through setup."); } catch (e) {}
+    this.setState({ copied: true });
+    clearTimeout(this._ct); this._ct = setTimeout(() => this.setState({ copied: false }), 1600);
+  };
+
+  buildSession() {
+    const mk = (name, target, lastW, reps, sets, pr) => ({
+      name, target, last: lastW ? ('Last ' + lastW + ' kg') : 'Bodyweight', pr: !!pr,
+      sets: Array.from({ length: sets }, () => ({ w: lastW || 0, r: reps, done: false }))
+    });
+    return [
+      mk('Goblet Squat', '3 × 10–12', 24, 12, 3, false),
+      mk('Romanian Deadlift', '3 × 10', 60, 10, 3, true),
+      mk('Leg Press', '3 × 12', 120, 12, 3, false),
+      mk('Seated Leg Curl', '3 × 12–15', 45, 14, 3, false),
+      mk('Standing Calf Raise', '4 × 15', 70, 15, 4, false),
+      mk('Hanging Knee Raise', '3 × 12', 0, 12, 3, false),
+    ];
+  }
+  setCurrent = (i) => () => this.setState({ currentEx: i });
+  changeSet = (ei, si, field, delta) => () => this.setState(s => ({
+    session: s.session.map((ex, i) => i !== ei ? ex : {
+      ...ex, sets: ex.sets.map((st, j) => j !== si ? st : { ...st, [field]: Math.max(0, Math.round((st[field] + delta) * 100) / 100) })
+    })
+  }));
+  toggleSet = (ei, si) => () => this.setState(s => ({
+    session: s.session.map((ex, i) => i !== ei ? ex : { ...ex, sets: ex.sets.map((st, j) => j !== si ? st : { ...st, done: !st.done }) })
+  }));
+  addSet = (ei) => () => this.setState(s => ({
+    session: s.session.map((ex, i) => {
+      if (i !== ei) return ex;
+      const last = ex.sets[ex.sets.length - 1] || { w: 0, r: 10 };
+      return { ...ex, sets: [...ex.sets, { w: last.w, r: last.r, done: false }] };
+    })
+  }));
+  finishWorkout = () => this.setState({ screen: 'home', energyOpen: true, session: null });
+
+  renderVals() {
+    const s = this.state;
+    const dark = s.theme === 'dark';
+    const C = (cur, val) => cur === val;
+
+    // week strip
+    const days = [
+      { d: 'M', state: 'rest' }, { d: 'T', state: 'done' }, { d: 'W', state: 'done' },
+      { d: 'T', state: 'now' }, { d: 'F', state: 'upcoming' }, { d: 'S', state: 'upcoming' }, { d: 'S', state: 'checkin' },
+    ];
+    const weekDays = days.map(d => ({
+      d: d.d, isRest: d.state === 'rest', isDone: d.state === 'done', isNow: d.state === 'now',
+      isUpcoming: d.state === 'upcoming', isCheckin: d.state === 'checkin',
+    }));
+
+    // session view
+    const sessionView = (s.session || []).map((ex, ei) => ({
+      key: ei, name: ex.name, target: ex.target, last: ex.last, pr: ex.pr,
+      isOpen: ei === s.currentEx,
+      doneStr: ex.sets.filter(x => x.done).length + ' / ' + ex.sets.length,
+      open: this.setCurrent(ei), addSet: this.addSet(ei),
+      sets: ex.sets.map((st, si) => ({
+        n: si + 1, w: st.w, r: st.r, done: st.done,
+        decW: this.changeSet(ei, si, 'w', -2.5), incW: this.changeSet(ei, si, 'w', 2.5),
+        decR: this.changeSet(ei, si, 'r', -1), incR: this.changeSet(ei, si, 'r', 1),
+        toggle: this.toggleSet(ei, si),
+        checkBg: st.done ? 'var(--green)' : 'transparent',
+        checkBorder: st.done ? 'var(--green)' : 'var(--line)',
+        checkStroke: st.done ? '#fff' : 'var(--ink3)',
+      })),
+    }));
+
+    // progress chart points
+    const raw = [124.2,123.6,124.1,123.2,123.8,122.9,123.1,122.4,122.8,122.1,121.9,121.5];
+    const waistRaw = [51.0,50.8,50.9,50.4,50.5,50.1,50.2,49.9,49.8,49.7,49.6,49.5];
+    const series = s.progressTab === 'waist' ? waistRaw : raw;
+    const minV = Math.min(...series), maxV = Math.max(...series);
+    const sx = i => (i / (series.length - 1)) * 300 + 10;
+    const sy = v => 140 - ((v - minV) / (maxV - minV || 1)) * 120;
+    const rawPts = series.map((v, i) => sx(i).toFixed(0) + ',' + sy(v).toFixed(0)).join(' ');
+    const avg = series.map((_, i) => { const a = series.slice(Math.max(0, i - 2), i + 1); return a.reduce((x, y) => x + y, 0) / a.length; });
+    const avgPts = avg.map((v, i) => sx(i).toFixed(0) + ',' + sy(v).toFixed(0)).join(' ');
+
+    // heatmap
+    const types = ['#7c9fc9', 'var(--accent)', 'var(--green)', 'var(--amber)', 'var(--surface2)', 'var(--surface2)', 'var(--surface2)'];
+    const heat = Array.from({ length: 84 }, (_, i) => {
+      const r = (i * 2654435761 % 100) / 100;
+      let idx = r < 0.16 ? 0 : r < 0.33 ? 1 : r < 0.5 ? 2 : r < 0.6 ? 3 : 4;
+      if (i > 72 && r < 0.55) idx = i % 4;
+      return { color: types[idx] };
+    });
+
+    // faces
+    const facesDef = [
+      { n: 1, mouth: 'M8 16c1-1 2-1.5 4-1.5s3 .5 4 1.5' },
+      { n: 2, mouth: 'M8 15.5c1-.5 2-.8 4-.8s3 .3 4 .8' },
+      { n: 3, mouth: 'M8.5 15h7' },
+      { n: 4, mouth: 'M8 14.5c1 .6 2 .9 4 .9s3-.3 4-.9' },
+      { n: 5, mouth: 'M8 14c1 1.2 2 1.8 4 1.8s3-.6 4-1.8' },
+    ];
+    const faces = facesDef.map(f => ({
+      mouth: f.mouth, pick: this.pickEnergy(f.n),
+      border: s.energyPick === f.n ? 'var(--accent)' : 'var(--line)',
+      bg: s.energyPick === f.n ? 'var(--accentSoft)' : 'var(--surface2)',
+      ink: s.energyPick === f.n ? 'var(--accent)' : 'var(--ink2)',
+    }));
+
+    const tab = (active) => ({
+      border: active ? 'var(--accent)' : 'var(--line)',
+      bg: active ? 'var(--accent)' : 'var(--surface)',
+      ink: active ? '#fff' : 'var(--ink2)',
+    });
+    const pw = tab(C(s.progressTab, 'weight')), pwa = tab(C(s.progressTab, 'waist')),
+      pc = tab(C(s.progressTab, 'cons')), pwi = tab(C(s.progressTab, 'wins'));
+    const je = tab(C(s.journalTab, 'energy')), jf = tab(C(s.journalTab, 'flags')),
+      jc = tab(C(s.journalTab, 'check')), ji = tab(C(s.journalTab, 'injury'));
+
+    const navColor = (name) => s.screen === name ? 'var(--ink)' : 'var(--ink3)';
+    const showNav = ['home', 'programme', 'progress', 'journal', 'diet', 'metrics'].includes(s.screen);
+    const showCoachFab = s.screen === 'home' && !s.coachOpen && !s.logMenuOpen && !s.energyOpen;
+
+    const obCta = s.onboardStep >= 8 ? 'Finish — see my programme' : 'Continue';
+
+    return {
+      themeLabel: dark ? 'Dark' : 'Light', themeAttr: dark ? 'dark' : 'light', isDark: dark, toggleTheme: this.toggleTheme, onJump: this.onJump, screen: s.screen,
+      isHome: C(s.screen, 'home'), isWorkout: C(s.screen, 'workout'), isDiet: C(s.screen, 'diet'),
+      isMetrics: C(s.screen, 'metrics'), isProgress: C(s.screen, 'progress'), isProgramme: C(s.screen, 'programme'),
+      isJournal: C(s.screen, 'journal'), isCheckin: C(s.screen, 'checkin'), isSettings: C(s.screen, 'settings'),
+      isConnect: C(s.screen, 'connect'), isOnboard: C(s.screen, 'onboard'),
+      goHome: () => this.go('home'), goWorkout: () => this.go('workout'), goDiet: () => this.go('diet'),
+      goMetrics: () => this.go('metrics'), goProgress: () => this.go('progress'), goProgramme: () => this.go('programme'),
+      goJournal: () => this.go('journal'), goCheckin: () => this.go('checkin'), goSettings: () => this.go('settings'),
+      goConnect: () => this.go('connect'), goOnboard: () => this.go('onboard'),
+      startWorkout: this.startWorkout, finishWorkout: this.finishWorkout,
+      openCoach: this.openCoach, closeCoach: this.closeCoach, coachOpen: s.coachOpen, showCoachFab,
+      openLogMenu: this.openLogMenu, closeLogMenu: this.closeLogMenu, logMenuOpen: s.logMenuOpen,
+      energyOpen: s.energyOpen, closeEnergy: this.closeEnergy,
+      weekDays, sessionView,
+      showNav, navHomeColor: navColor('home'), navProgColor: navColor('programme'),
+      navProgressColor: navColor('progress'), navJournalColor: navColor('journal'),
+      // progress
+      pgWeightTab: this.setProgressTab('weight'), pgWaistTab: this.setProgressTab('waist'),
+      pgConsTab: this.setProgressTab('cons'), pgWinsTab: this.setProgressTab('wins'),
+      pgWeightBorder: pw.border, pgWeightBg: pw.bg, pgWeightInk: pw.ink,
+      pgWaistBorder: pwa.border, pgWaistBg: pwa.bg, pgWaistInk: pwa.ink,
+      pgConsBorder: pc.border, pgConsBg: pc.bg, pgConsInk: pc.ink,
+      pgWinsBorder: pwi.border, pgWinsBg: pwi.bg, pgWinsInk: pwi.ink,
+      pgShowLine: C(s.progressTab, 'weight') || C(s.progressTab, 'waist'),
+      pgShowCons: C(s.progressTab, 'cons'), pgShowWins: C(s.progressTab, 'wins'),
+      pgChartLabel: s.progressTab === 'waist' ? 'Waist' : 'Weight',
+      pgChartDelta: s.progressTab === 'waist' ? '↓ 1.5 in' : '↓ 2.7 kg',
+      pgRawPts: rawPts, pgAvgPts: avgPts, pgLastY: sy(series[series.length - 1]).toFixed(0),
+      heat,
+      // journal
+      jEnergyTab: this.setJournalTab('energy'), jFlagsTab: this.setJournalTab('flags'),
+      jCheckTab: this.setJournalTab('check'), jInjuryTab: this.setJournalTab('injury'),
+      jEnergyBorder: je.border, jEnergyBg: je.bg, jEnergyInk: je.ink,
+      jFlagsBorder: jf.border, jFlagsBg: jf.bg, jFlagsInk: jf.ink,
+      jCheckBorder: jc.border, jCheckBg: jc.bg, jCheckInk: jc.ink,
+      jInjuryBorder: ji.border, jInjuryBg: ji.bg, jInjuryInk: ji.ink,
+      jShowEnergy: C(s.journalTab, 'energy'), jShowFlags: C(s.journalTab, 'flags'),
+      jShowCheck: C(s.journalTab, 'check'), jShowInjury: C(s.journalTab, 'injury'),
+      faces,
+      // metrics
+      showMore: s.showMore, toggleMore: this.toggleMore, moreLabel: s.showMore ? '− Fewer measurements' : '+ Add more measurements',
+      metricsSaved: s.metricsSaved, saveMetrics: this.saveMetrics,
+      // onboarding
+      onboardStep: s.onboardStep, onboardPct: Math.round(s.onboardStep / 8 * 100) + '%',
+      onboardStepLabel: s.onboardStep + ' / 8', onboardCta: obCta,
+      onboardNext: this.onboardNext, onboardBack: this.onboardBack,
+      ob1: s.onboardStep === 1, ob2: s.onboardStep === 2, ob3: s.onboardStep === 3, obOther: s.onboardStep > 3,
+      // connect
+      copyPrompt: this.copyPrompt, copyLabel: s.copied ? 'Copied!' : 'Copy starter prompt',
+    };
+  }
+}
+</script>
+</body>
+</html>

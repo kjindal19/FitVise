@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#2a241d"/>
+  <g transform="translate(256 256)" stroke="#e2622f" stroke-width="20" fill="none" stroke-linecap="round">
+    <rect x="-180" y="-40" width="48" height="80" rx="14" fill="#e2622f" stroke="none"/>
+    <rect x="132" y="-40" width="48" height="80" rx="14" fill="#e2622f" stroke="none"/>
+    <path d="M-132 0 H132"/>
+  </g>
+  <text x="256" y="430" text-anchor="middle" font-family="Georgia, serif" font-size="64" fill="#f6f3ec">FitVise</text>
+</svg>

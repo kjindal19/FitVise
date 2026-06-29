@@ -1,0 +1,34 @@
+# Latest compatible versions (resolved from PyPI). Bump deliberately.
+
+# ---- Web framework ----
+fastapi==0.138.1
+uvicorn[standard]==0.49.0
+python-multipart==0.0.32
+email-validator==2.3.0
+
+# ---- Data / settings ----
+pydantic==2.13.4
+pydantic-settings==2.14.2
+
+# ---- Database ----
+SQLAlchemy==2.0.51
+alembic==1.18.5
+psycopg[binary]==3.3.4         # PostgreSQL driver (multi_user / managed)
+
+# ---- Auth / crypto ----
+PyJWT==2.13.0
+bcrypt==5.0.0
+cryptography==49.0.0
+
+# ---- MCP server (Streamable HTTP) ----
+mcp==1.28.1
+
+# ---- Notifications (Web Push / VAPID) ----
+pywebpush==2.3.0
+py-vapid==1.9.4
+
+# ---- Scheduling ----
+APScheduler==3.11.3
+
+# ---- Misc ----
+httpx==0.28.1

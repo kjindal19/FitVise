@@ -1,0 +1,36 @@
+# ---- Env / secrets ----
+.env
+.env.local
+*.local
+packages/backend/.env
+packages/frontend/.env
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.sqlite3
+*.db
+data/
+
+# ---- Node / frontend ----
+node_modules/
+packages/frontend/dist/
+packages/frontend/dev-dist/
+.vite/
+*.tsbuildinfo
+
+# ---- Editors / OS ----
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# ---- Docker ----
+*.pid

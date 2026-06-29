@@ -1,0 +1,61 @@
+# =====================================================================
+# FitVise — full stack (backend API + MCP + OAuth AS, frontend PWA, db)
+#
+#   cp .env.example .env   &&   docker compose up --build
+#
+# Default mode is multi_user on PostgreSQL. For single-user/SQLite, set
+# FITVISE_AUTH_MODE=single_user and FITVISE_DB_TYPE=sqlite in .env (the
+# `db` service can then be skipped with `--scale db=0`).
+# =====================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fitvise}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fitvise}
+      POSTGRES_DB: ${POSTGRES_DB:-fitvise}
+    volumes:
+      - fitvise_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fitvise} -d ${POSTGRES_DB:-fitvise}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Host port 5433 → container 5432 (avoids clashing with a local Postgres).
+    # The backend always reaches the db at db:5432 over the compose network.
+    ports:
+      - "5433:5432"
+
+  backend:
+    build:
+      context: ./packages/backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Override DB host inside the compose network regardless of .env default.
+      FITVISE_DB_URL: ${FITVISE_DB_URL:-postgresql+psycopg://fitvise:fitvise@db:5432/fitvise}
+    volumes:
+      - ./packages/backend:/app
+      - fitvise_appdata:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./packages/frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  fitvise_pgdata:
+  fitvise_appdata:

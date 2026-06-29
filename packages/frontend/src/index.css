@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+/* Map the design tokens to Tailwind v4 theme variables so utilities like
+   bg-surface / text-ink / border-line / font-serif work AND respond to the
+   runtime [data-fv-theme] switch (the --color-* alias points at a live var). */
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink2);
+  --color-ink3: var(--ink3);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accentSoft: var(--accentSoft);
+  --color-green: var(--green);
+  --color-greenSoft: var(--greenSoft);
+  --color-amber: var(--amber);
+  --color-blue: var(--blue);
+  --color-blueBg: var(--blueBg);
+  --color-blueLine: var(--blueLine);
+  --color-blueInk: var(--blueInk);
+
+  --font-sans: "Hanken Grotesk", system-ui, sans-serif;
+  --font-serif: "Newsreader", serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+/* Design tokens ported from Design/FitVise.dc.html (light + dark). */
+:root {
+  --bg: #f6f3ec; --surface: #fffdf9; --surface2: #f0ece1; --ink: #221d18;
+  --ink2: #6f6557; --ink3: #a89a86; --line: #e7e1d6; --accent: #c2410c;
+  --accentSoft: #f7e8df; --green: #5b8c5a; --greenSoft: #e7efe4; --amber: #b9842a;
+  --blue: #3f6b9e; --blueBg: #eef2f7; --blueLine: #dbe4ee; --blueInk: #34465c;
+  --heroA: #2a241d; --heroB: #3a3127; --heroInk: #f6f3ec; --navBg: #fffdf9;
+}
+[data-fv-theme="dark"] {
+  --bg: #14110d; --surface: #1e1a15; --surface2: #26211b; --ink: #efeae1;
+  --ink2: #b3a896; --ink3: #857b6d; --line: #2c2720; --accent: #e2622f;
+  --accentSoft: #2e1f17; --green: #6fa56b; --greenSoft: #1c2a1c; --amber: #cda14a;
+  --blue: #6a93c4; --blueBg: #172230; --blueLine: #28384c; --blueInk: #cdd6e0;
+  --heroA: #0f0c08; --heroB: #241e17; --heroInk: #f6f3ec; --navBg: #1a1611;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.sa::-webkit-scrollbar { width: 0; height: 0; }
+.sa { scrollbar-width: none; }
+
+@keyframes sheetUp { from { transform: translateY(101%); } to { transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.anim-sheet { animation: sheetUp 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.anim-fade { animation: fadeIn 0.2s ease; }
