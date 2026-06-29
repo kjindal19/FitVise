@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Api, API_BASE } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { ScreenHeader } from "../components/ui";
 
 const STARTER =
@@ -9,10 +10,23 @@ const STARTER =
 
 export default function Connect() {
   const nav = useNavigate();
+  const { user, refresh } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [checking, setChecking] = useState(false);
   const { data: health } = useQuery({ queryKey: ["health"], queryFn: Api.health });
   const mcpUrl = `${API_BASE}/mcp`;
   const multiUser = health?.auth_mode !== "single_user";
+  const onboarded = Boolean(user?.onboarding_completed_at);
+
+  async function checkAndContinue() {
+    setChecking(true);
+    try {
+      await refresh();
+      nav("/");
+    } finally {
+      setChecking(false);
+    }
+  }
 
   function copy(text: string) {
     navigator.clipboard?.writeText(text);
@@ -63,11 +77,21 @@ export default function Connect() {
       </Step>
 
       <button
-        onClick={() => nav("/")}
-        className="mt-4 h-12 w-full rounded-2xl border border-line bg-surface font-semibold text-ink"
+        onClick={checkAndContinue}
+        disabled={checking}
+        className="mt-4 h-12 w-full rounded-2xl border border-line bg-surface font-semibold text-ink disabled:opacity-60"
       >
-        Skip to app →
+        {checking
+          ? "Checking…"
+          : onboarded
+            ? "Continue to app →"
+            : "I've finished onboarding — continue →"}
       </button>
+      {!onboarded && (
+        <p className="mt-2 text-center text-xs text-ink3">
+          Complete onboarding in your AI client to unlock the app.
+        </p>
+      )}
     </div>
   );
 }

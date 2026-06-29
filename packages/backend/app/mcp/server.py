@@ -11,12 +11,36 @@ import datetime as dt
 
 from mcp.server.fastmcp import Context, FastMCP
 
+from app.config import settings
 from app.db.base import SessionLocal
 from app.mcp import data
-from app.mcp.auth import MCPAuthError, resolve_user
+from app.mcp.auth import FitViseTokenVerifier, MCPAuthError, resolve_user
 from app.programme.service import ProgrammeValidationError, write_programme
 from app.schemas.common import mcp_err, mcp_ok
 from app.notifications import triggers
+
+
+def _auth_kwargs() -> dict:
+    """In multi_user / managed mode, wire OAuth bearer enforcement into the
+    transport so unauthenticated clients get 401 + ``WWW-Authenticate`` (RFC 9728)
+    and discover the OAuth flow. The challenge points at the Protected Resource
+    Metadata served at the app root (see app.main); ``resource_server_url`` is the
+    bare instance URL so the well-known path resolves to that existing endpoint
+    rather than under the ``/mcp`` mount. Single-user mode adds no transport auth.
+    """
+    if not settings.is_multi_user:
+        return {}
+    from mcp.server.auth.settings import AuthSettings
+
+    return {
+        "token_verifier": FitViseTokenVerifier(),
+        "auth": AuthSettings(
+            issuer_url=settings.issuer,
+            resource_server_url=settings.base_url.rstrip("/"),
+            required_scopes=[],
+        ),
+    }
+
 
 mcp_server = FastMCP(
     name="fitvise",
@@ -28,6 +52,7 @@ mcp_server = FastMCP(
     ),
     stateless_http=True,
     streamable_http_path="/",
+    **_auth_kwargs(),
 )
 
 

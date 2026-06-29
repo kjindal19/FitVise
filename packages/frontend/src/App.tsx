@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { useAuth } from "./lib/auth";
 import BottomNav from "./components/BottomNav";
@@ -37,6 +37,12 @@ export default function App() {
   // multi_user mode requires a logged-in user for the app shell.
   if (isMultiUser && !user && pathname !== "/connect") {
     return <Login />;
+  }
+
+  // Onboarding is strictly enforced: until it is completed on the backend,
+  // the user is confined to the Connect screen (the in-app onboarding surface).
+  if (user && !user.onboarding_completed_at && pathname !== "/connect") {
+    return <Navigate to="/connect" replace />;
   }
 
   return (
