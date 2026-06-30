@@ -45,10 +45,13 @@ def _auth_kwargs() -> dict:
 mcp_server = FastMCP(
     name="fitvise",
     instructions=(
-        "FitVise is the user's fitness journal. Use the read tools to load the user's "
-        "profile, programme, and logs before coaching; use the write tools to update the "
-        "programme, record check-in summaries, and set weekly targets. All data is scoped "
-        "to the authenticated user."
+        "You are the user's personal trainer and nutritionist, and FitVise is the journal "
+        "where their plan and history live. Talk like an experienced coach who knows them — "
+        "warm, direct, encouraging, never clinical or form-like. Always read the relevant "
+        "context first (get_user_profile, get_current_programme, recent logs) before giving "
+        "advice. Capture what you learn about them with update_user_profile so it persists. "
+        "Use update_programme to author or revise their plan, write_checkin_summary and "
+        "set_weekly_targets at check-ins. All data is scoped to the authenticated user."
     ),
     stateless_http=True,
     streamable_http_path="/",
@@ -270,12 +273,112 @@ def get_non_scale_victories(ctx: Context) -> dict:
 # Write tools
 # =====================================================================
 @mcp_server.tool()
+def update_user_profile(
+    ctx: Context,
+    name: str | None = None,
+    age: int | None = None,
+    gender: str | None = None,
+    height: float | None = None,
+    current_weight: float | None = None,
+    weight_unit: str | None = None,
+    measurement_unit: str | None = None,
+    goal_type: str | None = None,
+    target_weight: float | None = None,
+    target_waist: float | None = None,
+    diet_type: str | None = None,
+    dietary_restrictions: str | None = None,
+    eating_patterns: str | None = None,
+    supplements_notes: str | None = None,
+    medical_notes: str | None = None,
+    training_modality: str | None = None,
+    training_days_per_week: int | None = None,
+    session_length_preference: int | None = None,
+    injuries_notes: str | None = None,
+    preferences_notes: str | None = None,
+) -> dict:
+    """Save what you learn about the user to their profile — call this as you gather
+    details in conversation so nothing is lost (e.g. right after they tell you their
+    age/weight/height, then again after the diet questions). Onboarding cannot be
+    completed until the required fields are saved. Only pass the fields you're
+    updating; omitted fields are left unchanged.
+
+    Field guidance:
+    - gender: 'male' | 'female' | 'other' (used to tailor training/nutrition).
+    - height: in cm (or inches if measurement_unit='in'); current_weight/target_weight
+      in kg (or lbs if weight_unit='lbs').
+    - goal_type: e.g. 'fat_loss' | 'muscle_gain' | 'recomposition' | 'maintenance' |
+      'strength' | 'general_fitness'.
+    - diet_type: e.g. 'vegetarian' | 'non_vegetarian' | 'eggetarian' | 'vegan' |
+      'pescatarian'.
+    - dietary_restrictions: allergies, intolerances, foods they avoid.
+    - eating_patterns: their relationship with food — foodie, dessert lover, big
+      snacker, late-night eater, who they cook for, eats out often, etc.
+    - supplements_notes: supplements they take or are interested in.
+    - medical_notes: medical conditions / issues relevant to training or diet.
+    - training_modality: 'gym' | 'home_bodyweight' | 'walk_run' | 'classes_zumba' |
+      'hybrid'.
+    - injuries_notes: any pain, injuries, or movement limitations to program around.
+    Returns the updated onboarding status so you can see what's still missing."""
+    from app.core.onboarding import apply_profile_updates, compute_onboarding_status
+
+    updates = {
+        "name": name, "age": age, "gender": gender,
+        "weight_unit": weight_unit, "measurement_unit": measurement_unit,
+        "height": height, "current_weight": current_weight,
+        "goal_type": goal_type, "target_weight": target_weight, "target_waist": target_waist,
+        "diet_type": diet_type, "dietary_restrictions": dietary_restrictions,
+        "eating_patterns": eating_patterns, "supplements_notes": supplements_notes,
+        "medical_notes": medical_notes,
+        "training_modality": training_modality, "training_days_per_week": training_days_per_week,
+        "session_length_preference": session_length_preference,
+        "injuries_notes": injuries_notes, "preferences_notes": preferences_notes,
+    }
+
+    with SessionLocal() as db:
+        try:
+            user = resolve_user(db, _headers(ctx))
+        except MCPAuthError as e:
+            return mcp_err(str(e), "UNAUTHORIZED")
+        user = apply_profile_updates(db, user, updates)
+        return mcp_ok(
+            {
+                "profile": data.profile_dict(user),
+                "onboarding": compute_onboarding_status(user).model_dump(mode="json"),
+            },
+            user_id=user.id,
+        )
+
+
+@mcp_server.tool()
 def update_programme(ctx: Context, programme: dict) -> dict:
-    """Create or replace the user's active programme. ``programme`` must match the
-    FitVise programme schema (name, total_weeks, current_week, sessions[] with
-    exercises[]). The payload is validated structurally; invalid writes return
-    code VALIDATION_FAILED with a reason so you can correct and retry. The previous
-    programme is archived, not deleted."""
+    """Create or replace the user's active programme. The previous programme is
+    archived, not deleted. Invalid writes return code VALIDATION_FAILED with a
+    reason — fix and retry.
+
+    ``programme`` shape:
+      {
+        "name": str, "total_weeks": int, "current_week": int (default 1),
+        "goal_type": str,
+        "sessions": [
+          {
+            "session_type": "push|pull|lower|upper|full|walk|run|class|rest|cardio|mobility",
+            "label": "Upper A — Push",          # optional display title
+            "day_of_week": 0,                    # optional, 0=Mon … 6=Sun
+            "week_number": 1,                    # optional, defaults to 1
+            "exercises": [
+              { "name": str, "sets": int,
+                "reps": "10-12",                 # number, range, or text e.g. "30 sec hold"
+                "rest_seconds": int, "notes": str }
+            ],
+            "warmup":   [ {"name": str, "reps": "5 min", "notes": str} ],   # optional
+            "cooldown": [ {"name": str, "reps": "30 sec", "notes": str} ]   # optional
+          }
+        ]
+      }
+
+    Only include ``warmup`` / ``cooldown`` when the user actually wants them — the app
+    hides those blocks entirely when omitted. ``reps`` and ``notes`` are accepted as
+    written; numeric ranges are parsed automatically."""
     with SessionLocal() as db:
         try:
             user = resolve_user(db, _headers(ctx))
@@ -293,22 +396,58 @@ def update_programme(ctx: Context, programme: dict) -> dict:
 
 
 @mcp_server.tool()
-def complete_onboarding(ctx: Context) -> dict:
-    """Mark onboarding complete (the lock-in handshake): sets onboarding_completed_at
-    and unlocks app features. Call this only after the profile is captured and the
+def complete_onboarding(
+    ctx: Context,
+    name: str | None = None,
+    age: int | None = None,
+    gender: str | None = None,
+    height: float | None = None,
+    current_weight: float | None = None,
+    goal_type: str | None = None,
+    diet_type: str | None = None,
+    training_modality: str | None = None,
+    training_days_per_week: int | None = None,
+    target_weight: float | None = None,
+    dietary_restrictions: str | None = None,
+    eating_patterns: str | None = None,
+    supplements_notes: str | None = None,
+    medical_notes: str | None = None,
+    injuries_notes: str | None = None,
+) -> dict:
+    """Mark onboarding complete (the lock-in handshake) and unlock app features.
+
+    You may pass any still-missing profile fields directly here to save and finalise
+    in one call — this is the safety net, so if you've collected the details in
+    conversation but haven't persisted them yet, include them now. It persists them
+    (same as update_user_profile), then completes. If required fields are still
+    missing afterwards it returns VALIDATION_FAILED listing them — set those via
+    update_user_profile (or re-call this with them) and retry. Call only after the
     first programme is written via update_programme."""
-    from app.core.onboarding import compute_onboarding_status
+    from app.core.onboarding import apply_profile_updates, compute_onboarding_status
     from app.db.base import utcnow
+
+    updates = {
+        "name": name, "age": age, "gender": gender, "height": height,
+        "current_weight": current_weight, "goal_type": goal_type, "diet_type": diet_type,
+        "training_modality": training_modality, "training_days_per_week": training_days_per_week,
+        "target_weight": target_weight, "dietary_restrictions": dietary_restrictions,
+        "eating_patterns": eating_patterns, "supplements_notes": supplements_notes,
+        "medical_notes": medical_notes, "injuries_notes": injuries_notes,
+    }
 
     with SessionLocal() as db:
         try:
             user = resolve_user(db, _headers(ctx))
         except MCPAuthError as e:
             return mcp_err(str(e), "UNAUTHORIZED")
+        if any(v is not None for v in updates.values()):
+            user = apply_profile_updates(db, user, updates)
         status = compute_onboarding_status(user)
         if status.missing_fields:
             return mcp_err(
-                f"Cannot complete onboarding; missing: {', '.join(status.missing_fields)}",
+                "Cannot complete onboarding; still missing: "
+                f"{', '.join(status.missing_fields)}. Save them via update_user_profile "
+                "(or pass them to this tool) and retry.",
                 "VALIDATION_FAILED",
             )
         if user.onboarding_completed_at is None:
@@ -431,16 +570,42 @@ def add_exercise_substitution(
 # =====================================================================
 @mcp_server.prompt()
 def onboard() -> str:
-    """Run FitVise onboarding: capture the profile (incl. training modality),
-    propose and lock a first programme."""
+    """Run FitVise onboarding as a personal trainer: get to know the user
+    conversationally, then author and lock their first programme."""
     return (
-        "You are the user's FitVise coach running onboarding.\n"
-        "1. Call get_onboarding_status to see what's missing.\n"
-        "2. Ask one question at a time to fill the missing profile fields "
-        "(goal, training modality, days/week, current weight, injuries).\n"
-        "3. Propose a first programme and, once agreed, call update_programme with it.\n"
-        "4. Finish by calling complete_onboarding.\n"
-        "Be warm, concise, and never overwhelm with dense forms."
+        "You're the user's new personal trainer and nutritionist, meeting them for the "
+        "first time. This is a real intake conversation, not a form — be warm, curious, "
+        "and experienced. React to what they say before moving on. Group related "
+        "questions so it flows naturally (don't drip one trivial question at a time, and "
+        "don't dump a giant questionnaire either).\n\n"
+        "Open by introducing yourself and asking what brought them here and what they "
+        "want to achieve — get the goal and the 'why' behind it.\n\n"
+        "Then move through these stages, roughly one message per stage:\n"
+        "  1. THE BASICS, together in one message: age, gender, height, and current "
+        "weight (and a target weight if they have one). Frame it as getting the numbers "
+        "to tailor everything to them.\n"
+        "  2. NUTRITION — get to know how they actually eat. Diet preference "
+        "(veg / non-veg / eggetarian / vegan, etc.), any allergies or foods they avoid, "
+        "AND their patterns/relationship with food: are they a foodie, a dessert lover, a "
+        "big snacker, eat out a lot, cook for family? Be conversational here.\n"
+        "  3. HEALTH & SUPPLEMENTS: any medical conditions or issues, and whether they "
+        "take or are interested in any supplements.\n"
+        "  4. TRAINING: how they like to train (gym, home/bodyweight, walking/running, "
+        "classes), how many days a week they can realistically commit, any injuries or "
+        "limitations to work around, and whether they'd like warm-ups and cool-downs "
+        "included in their sessions.\n\n"
+        "After EACH stage, immediately call update_user_profile with what you just "
+        "learned (age/gender/height/current_weight; diet_type/dietary_restrictions/"
+        "eating_patterns; medical_notes/supplements_notes; training_modality/"
+        "training_days_per_week/injuries_notes). Do NOT batch all saves to the end — "
+        "persist as you go. Call get_onboarding_status anytime to see what's left.\n\n"
+        "Once you know enough, propose a first programme in plain language, get their "
+        "buy-in, then call update_programme — include warmup/cooldown blocks only if they "
+        "asked for them. Finally call complete_onboarding to lock it in (you can pass any "
+        "fields you haven't saved yet directly to it as a safety net), then tell them how "
+        "to start their first session in the app.\n\n"
+        "Throughout: confident, specific, and personal. Make them feel coached, not "
+        "processed."
     )
 
 

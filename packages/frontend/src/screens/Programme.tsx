@@ -50,9 +50,18 @@ export default function Programme() {
                 <span className="h-2.5 w-2.5 rounded-full border-2 border-ink3" />
                 <div className="flex-1">
                   <div className="text-[15px] font-semibold text-ink">
-                    {s.day_of_week != null ? DAYS[s.day_of_week] : "—"} · {s.session_type}
+                    {s.day_of_week != null ? DAYS[s.day_of_week] : "—"} ·{" "}
+                    {s.label ?? s.session_type}
                   </div>
-                  <div className="text-xs text-ink3">{s.exercises.length} exercises</div>
+                  <div className="flex items-center gap-1.5 text-xs text-ink3">
+                    <span>{s.exercises.length} exercises</span>
+                    {s.warmup && s.warmup.length > 0 && (
+                      <span className="rounded-full bg-surface2 px-1.5 py-0.5 text-[10px]">warm-up</span>
+                    )}
+                    {s.cooldown && s.cooldown.length > 0 && (
+                      <span className="rounded-full bg-surface2 px-1.5 py-0.5 text-[10px]">cool-down</span>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

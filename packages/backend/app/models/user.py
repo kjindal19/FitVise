@@ -15,6 +15,8 @@ class User(Base):
     id: Mapped[str] = pk_column()
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # male | female | other (free-text; used to tailor training/nutrition guidance)
+    gender: Mapped[str | None] = mapped_column(String(20), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
 
     # Auth — password only used in multi_user / managed; null in single_user.
@@ -52,6 +54,11 @@ class UserProfile(Base):
 
     diet_type: Mapped[str | None] = mapped_column(String(60), nullable=True)
     dietary_restrictions: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Free-text relationship-with-food notes (foodie, dessert lover, snacking
+    # habits, who they cook for) gathered conversationally during onboarding.
+    eating_patterns: Mapped[str | None] = mapped_column(Text, nullable=True)
+    supplements_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    medical_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     training_days_per_week: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # gym | home_bodyweight | walk_run | classes_zumba | hybrid

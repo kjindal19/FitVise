@@ -114,6 +114,7 @@ export interface User {
   id: string;
   name: string;
   age: number | null;
+  gender: string | null;
   email: string | null;
   is_admin: boolean;
   weight_unit: string;
@@ -144,7 +145,10 @@ export interface ProgrammeSession {
   week_number: number;
   day_of_week: number | null;
   session_type: string;
+  label: string | null;
   exercises: ExerciseItem[];
+  warmup: AccessoryItem[] | null;
+  cooldown: AccessoryItem[] | null;
 }
 export interface ExerciseItem {
   id: string;
@@ -152,6 +156,15 @@ export interface ExerciseItem {
   sets: number | null;
   reps_min: number | null;
   reps_max: number | null;
+  reps_raw: string | null;
+  rest_seconds: number | null;
+  form_notes: string | null;
+}
+export interface AccessoryItem {
+  name: string;
+  reps: string | null;
+  rest_seconds: number | null;
+  notes: string | null;
 }
 export interface WorkoutLog {
   id: string;

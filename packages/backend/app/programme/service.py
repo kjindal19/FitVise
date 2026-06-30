@@ -12,11 +12,32 @@ from sqlalchemy.orm import Session
 
 from app.db.base import utcnow
 from app.models.programme import Exercise, Programme, ProgrammeSession
-from app.schemas.programme import ProgrammeWrite
+from app.schemas.programme import ExerciseIn, ProgrammeWrite
 
 VALID_SESSION_TYPES = {
     "push", "pull", "lower", "upper", "full", "walk", "run", "class", "rest", "cardio", "mobility",
 }
+
+
+def _reps_label(ex: ExerciseIn) -> str | None:
+    """Render an exercise's rep prescription back to a display string."""
+    if ex.reps_raw:
+        return ex.reps_raw
+    if ex.reps_min and ex.reps_max and ex.reps_min != ex.reps_max:
+        return f"{ex.reps_min}-{ex.reps_max}"
+    if ex.reps_min:
+        return str(ex.reps_min)
+    return None
+
+
+def _accessory_dict(ex: ExerciseIn) -> dict:
+    """Compact JSON form for warm-up / cool-down items (not weight-logged)."""
+    return {
+        "name": ex.name,
+        "reps": _reps_label(ex),
+        "rest_seconds": ex.rest_seconds,
+        "notes": ex.form_notes,
+    }
 
 
 class ProgrammeValidationError(Exception):
@@ -94,20 +115,24 @@ def write_programme(db: Session, *, user_id: str, payload: dict) -> Programme:
             week_number=sess.week_number,
             day_of_week=sess.day_of_week,
             session_type=sess.session_type,
+            label=sess.label,
             estimated_duration_minutes=sess.estimated_duration_minutes,
             notes=sess.notes,
+            warmup=[_accessory_dict(e) for e in sess.warmup] if sess.warmup else None,
+            cooldown=[_accessory_dict(e) for e in sess.cooldown] if sess.cooldown else None,
         )
         db.add(s)
         db.flush()
-        for ex in sess.exercises:
+        for order, ex in enumerate(sess.exercises):
             db.add(
                 Exercise(
                     session_id=s.id,
                     name=ex.name,
-                    order_index=ex.order_index,
+                    order_index=ex.order_index or order,
                     sets=ex.sets,
                     reps_min=ex.reps_min,
                     reps_max=ex.reps_max,
+                    reps_raw=ex.reps_raw,
                     rest_seconds=ex.rest_seconds,
                     form_notes=ex.form_notes,
                     substitutes=ex.substitutes,

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Api } from "../lib/api";
+import { Api, type AccessoryItem } from "../lib/api";
 import { mutate } from "../lib/offline";
 import { ScreenHeader } from "../components/ui";
 import { CheckIcon } from "../components/Icon";
@@ -25,19 +25,23 @@ export default function Workout() {
     retry: false,
   });
 
+  const session = programme?.sessions?.[0];
+
   const initial = useMemo<ExRow[]>(() => {
-    const session = programme?.sessions?.[0];
     if (!session) return [];
-    return session.exercises.map((e) => ({
-      name: e.name,
-      target: `${e.sets ?? 3} × ${e.reps_min ?? 8}-${e.reps_max ?? 12}`,
-      sets: Array.from({ length: e.sets ?? 3 }, () => ({
-        weight: 0,
-        reps: e.reps_min ?? 10,
-        done: false,
-      })),
-    }));
-  }, [programme]);
+    return session.exercises.map((e) => {
+      const reps = e.reps_raw ?? (e.reps_min ? `${e.reps_min}-${e.reps_max ?? e.reps_min}` : "8-12");
+      return {
+        name: e.name,
+        target: `${e.sets ?? 3} × ${reps}`,
+        sets: Array.from({ length: e.sets ?? 3 }, () => ({
+          weight: 0,
+          reps: e.reps_min ?? 10,
+          done: false,
+        })),
+      };
+    });
+  }, [session]);
 
   const [rows, setRows] = useState<ExRow[]>([]);
   const [open, setOpen] = useState(0);
@@ -76,7 +80,7 @@ export default function Workout() {
     <div className="pb-28 pt-2">
       <div className="px-5">
         <ScreenHeader
-          title={programme?.sessions?.[0]?.session_type ?? "Workout"}
+          title={session?.label ?? session?.session_type ?? "Workout"}
           subtitle="Active session · tap to log"
           back
           bell={false}
@@ -87,6 +91,10 @@ export default function Workout() {
         <div className="mt-10 px-5 text-center text-sm text-ink2">
           No active programme yet. Ask your AI coach to create one, then start a workout.
         </div>
+      )}
+
+      {session?.warmup && session.warmup.length > 0 && (
+        <AccessoryBlock title="Warm-up" items={session.warmup} accent="var(--amber, #f59e0b)" />
       )}
 
       <div className="mt-4 flex flex-col gap-2.5 px-5">
@@ -130,6 +138,10 @@ export default function Workout() {
         ))}
       </div>
 
+      {session?.cooldown && session.cooldown.length > 0 && (
+        <AccessoryBlock title="Cool-down" items={session.cooldown} accent="var(--blue, #3b82f6)" />
+      )}
+
       {ex.length > 0 && (
         <div
           className="absolute inset-x-0 bottom-0 px-5 py-3.5"
@@ -143,6 +155,60 @@ export default function Workout() {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function AccessoryBlock({
+  title,
+  items,
+  accent,
+}: {
+  title: string;
+  items: AccessoryItem[];
+  accent: string;
+}) {
+  const [done, setDone] = useState<boolean[]>(() => items.map(() => false));
+  return (
+    <div className="mt-4 px-5">
+      <div className="flex items-center gap-2">
+        <span className="h-2.5 w-2.5 rounded-full" style={{ background: accent }} />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink3">
+          {title}
+        </span>
+      </div>
+      <div className="mt-2 overflow-hidden rounded-2xl border border-line bg-surface">
+        {items.map((it, i) => (
+          <button
+            key={i}
+            onClick={() => setDone((d) => d.map((v, j) => (j === i ? !v : v)))}
+            className="flex w-full items-center gap-3 border-b border-line p-3.5 text-left last:border-b-0"
+          >
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-lg border-2"
+              style={{
+                borderColor: done[i] ? accent : "var(--line)",
+                background: done[i] ? accent : "transparent",
+              }}
+            >
+              <CheckIcon size={15} stroke={done[i] ? "#fff" : "var(--ink3)"} />
+            </span>
+            <div className="flex-1">
+              <div
+                className="text-[14px] font-medium text-ink"
+                style={{ textDecoration: done[i] ? "line-through" : "none", opacity: done[i] ? 0.6 : 1 }}
+              >
+                {it.name}
+              </div>
+              {(it.reps || it.notes) && (
+                <div className="mt-0.5 text-xs text-ink3">
+                  {[it.reps, it.notes].filter(Boolean).join(" · ")}
+                </div>
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

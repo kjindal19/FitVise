@@ -27,6 +27,7 @@ def profile_dict(user: User) -> dict:
     return {
         "name": user.name,
         "age": user.age,
+        "gender": user.gender,
         "weight_unit": user.weight_unit,
         "measurement_unit": user.measurement_unit,
         "current_weight": getattr(p, "current_weight", None),
@@ -34,11 +35,25 @@ def profile_dict(user: User) -> dict:
         "goal_type": getattr(p, "goal_type", None),
         "target_weight": getattr(p, "target_weight", None),
         "diet_type": getattr(p, "diet_type", None),
+        "dietary_restrictions": getattr(p, "dietary_restrictions", None),
+        "eating_patterns": getattr(p, "eating_patterns", None),
+        "supplements_notes": getattr(p, "supplements_notes", None),
+        "medical_notes": getattr(p, "medical_notes", None),
         "training_modality": getattr(p, "training_modality", None),
         "training_days_per_week": getattr(p, "training_days_per_week", None),
         "injuries_notes": getattr(p, "injuries_notes", None),
         "preferences_notes": getattr(p, "preferences_notes", None),
     }
+
+
+def _reps_str(e) -> str | None:
+    if getattr(e, "reps_raw", None):
+        return e.reps_raw
+    if e.reps_min and e.reps_max and e.reps_min != e.reps_max:
+        return f"{e.reps_min}-{e.reps_max}"
+    if e.reps_min:
+        return str(e.reps_min)
+    return None
 
 
 def current_programme_dict(db: Session, user_id: str, *, summary: bool = False) -> dict | None:
@@ -71,11 +86,14 @@ def current_programme_dict(db: Session, user_id: str, *, summary: bool = False) 
             {
                 "day_of_week": s.day_of_week,
                 "type": s.session_type,
+                "label": s.label,
+                "has_warmup": bool(s.warmup),
+                "has_cooldown": bool(s.cooldown),
                 "exercises": [
                     {
                         "name": e.name,
                         "sets": e.sets,
-                        "reps": f"{e.reps_min}-{e.reps_max}" if e.reps_min else None,
+                        "reps": _reps_str(e),
                     }
                     for e in s.exercises
                 ],
@@ -110,13 +128,16 @@ def session_plan_dict(
     return {
         "day_of_week": s.day_of_week,
         "type": s.session_type,
+        "label": s.label,
         "estimated_duration_minutes": s.estimated_duration_minutes,
         "notes": s.notes,
+        "warmup": s.warmup or None,
+        "cooldown": s.cooldown or None,
         "exercises": [
             {
                 "name": e.name,
                 "sets": e.sets,
-                "reps": f"{e.reps_min}-{e.reps_max}" if e.reps_min else None,
+                "reps": _reps_str(e),
                 "rest_seconds": e.rest_seconds,
                 "form_notes": e.form_notes,
                 "substitutes": e.substitutes,

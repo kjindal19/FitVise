@@ -31,6 +31,7 @@ class UserRead(ORMModel):
     id: str
     name: str
     age: int | None = None
+    gender: str | None = None
     email: str | None = None
     is_admin: bool
     weight_unit: str
@@ -43,6 +44,7 @@ class UserRead(ORMModel):
 class UserUpdate(BaseModel):
     name: str | None = None
     age: int | None = None
+    gender: str | None = None
     email: EmailStr | None = None
     weight_unit: str | None = None
     measurement_unit: str | None = None
@@ -57,6 +59,9 @@ class ProfileRead(ORMModel):
     target_waist: float | None = None
     diet_type: str | None = None
     dietary_restrictions: str | None = None
+    eating_patterns: str | None = None
+    supplements_notes: str | None = None
+    medical_notes: str | None = None
     training_days_per_week: int | None = None
     training_modality: str | None = None
     preferred_activities: list | None = None
@@ -76,6 +81,9 @@ class ProfileUpdate(BaseModel):
     target_waist: float | None = None
     diet_type: str | None = None
     dietary_restrictions: str | None = None
+    eating_patterns: str | None = None
+    supplements_notes: str | None = None
+    medical_notes: str | None = None
     training_days_per_week: int | None = None
     training_modality: str | None = None
     preferred_activities: list | None = None

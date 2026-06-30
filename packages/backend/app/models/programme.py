@@ -58,8 +58,14 @@ class ProgrammeSession(Base):
     day_of_week: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 0=Mon … 6=Sun
     # push | pull | lower | upper | full | walk | run | class | rest
     session_type: Mapped[str] = mapped_column(String(24), nullable=False)
+    # Human-friendly session title authored by the coach, e.g. "Upper A — Push".
+    label: Mapped[str | None] = mapped_column(String(120), nullable=True)
     estimated_duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Optional warm-up / cool-down blocks: list[{name, reps, duration, notes}]. Only
+    # populated when the coach includes them; the UI hides empty blocks entirely.
+    warmup: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    cooldown: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
     programme: Mapped["Programme"] = relationship(back_populates="sessions")
     exercises: Mapped[list["Exercise"]] = relationship(
@@ -79,6 +85,9 @@ class Exercise(Base):
     sets: Mapped[int | None] = mapped_column(Integer, nullable=True)
     reps_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
     reps_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Verbatim rep prescription when it isn't a plain numeric range, e.g.
+    # "30-45 sec hold", "AMRAP", "8 each side". Rendered as-is in the UI.
+    reps_raw: Mapped[str | None] = mapped_column(String(60), nullable=True)
     rest_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     form_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     substitutes: Mapped[list | None] = mapped_column(JSON, nullable=True)
