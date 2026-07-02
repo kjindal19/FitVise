@@ -72,6 +72,33 @@ def mark_all_read(user: User = Depends(get_current_user), db: Session = Depends(
     return {"updated": updated}
 
 
+# NOTE: declared before ``/{notification_id}`` so the literal path wins the match.
+@router.delete("/read")
+def clear_read(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    """Remove every notification the user has already read (inbox tidy-up)."""
+    deleted = (
+        db.query(Notification)
+        .filter(Notification.user_id == user.id, Notification.read_at.is_not(None))
+        .delete()
+    )
+    db.commit()
+    return {"deleted": deleted}
+
+
+@router.delete("/{notification_id}", status_code=204)
+def delete_notification(
+    notification_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """Dismiss a single notification."""
+    note = db.query(Notification).filter(
+        Notification.id == notification_id, Notification.user_id == user.id
+    ).first()
+    if not note:
+        raise HTTPException(404, "Not found")
+    db.delete(note)
+    db.commit()
+
+
 # ---- Preferences ---------------------------------------------------
 @router.get("/preferences", response_model=NotificationPreferenceRead)
 def get_preferences(user: User = Depends(get_current_user), db: Session = Depends(get_db)):

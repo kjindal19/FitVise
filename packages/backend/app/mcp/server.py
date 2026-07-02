@@ -155,7 +155,7 @@ def get_workout_logs(ctx: Context, start_date: str | None = None, end_date: str 
             user = resolve_user(db, _headers(ctx))
         except MCPAuthError as e:
             return mcp_err(str(e), "UNAUTHORIZED")
-        start = _parse_date(start_date) or _default_start(4)
+        start = _parse_date(start_date) or _default_start(2)
         rows = data.workout_logs_dicts(db, user.id, start, _parse_date(end_date))
         return mcp_ok(rows, user_id=user.id, context_note="Last 4 weeks unless a range was specified.")
 
@@ -293,6 +293,8 @@ def update_user_profile(
     training_modality: str | None = None,
     training_days_per_week: int | None = None,
     session_length_preference: int | None = None,
+    equipment_available: list[str] | None = None,
+    gym_access_type: str | None = None,
     injuries_notes: str | None = None,
     preferences_notes: str | None = None,
 ) -> dict:
@@ -317,6 +319,13 @@ def update_user_profile(
     - medical_notes: medical conditions / issues relevant to training or diet.
     - training_modality: 'gym' | 'home_bodyweight' | 'walk_run' | 'classes_zumba' |
       'hybrid'.
+    - equipment_available: the machines / kit the user can actually train with, as a
+      list of short labels (e.g. ['barbell','dumbbells','squat_rack','leg_press',
+      'cable_machine','pull_up_bar','resistance_bands','kettlebells','treadmill']).
+      Confirm this list back to the user during onboarding so they know which
+      exercises may need swapping, and only program movements their equipment
+      supports.
+    - gym_access_type: e.g. 'full_gym' | 'home_gym' | 'basic_home' | 'bodyweight_only'.
     - injuries_notes: any pain, injuries, or movement limitations to program around.
     Returns the updated onboarding status so you can see what's still missing."""
     from app.core.onboarding import apply_profile_updates, compute_onboarding_status
@@ -331,6 +340,7 @@ def update_user_profile(
         "medical_notes": medical_notes,
         "training_modality": training_modality, "training_days_per_week": training_days_per_week,
         "session_length_preference": session_length_preference,
+        "equipment_available": equipment_available, "gym_access_type": gym_access_type,
         "injuries_notes": injuries_notes, "preferences_notes": preferences_notes,
     }
 
@@ -593,12 +603,18 @@ def onboard() -> str:
         "  4. TRAINING: how they like to train (gym, home/bodyweight, walking/running, "
         "classes), how many days a week they can realistically commit, any injuries or "
         "limitations to work around, and whether they'd like warm-ups and cool-downs "
-        "included in their sessions.\n\n"
+        "included in their sessions. Also ask what equipment / machines they actually "
+        "have access to (full gym, a home setup, just dumbbells and bands, bodyweight "
+        "only, etc.). Then READ BACK the specific equipment list you understood and have "
+        "them confirm it — make clear this is what their exercises will be built around, "
+        "so anything they don't have gets swapped out. Save it via equipment_available "
+        "(and gym_access_type).\n\n"
         "After EACH stage, immediately call update_user_profile with what you just "
         "learned (age/gender/height/current_weight; diet_type/dietary_restrictions/"
         "eating_patterns; medical_notes/supplements_notes; training_modality/"
-        "training_days_per_week/injuries_notes). Do NOT batch all saves to the end — "
-        "persist as you go. Call get_onboarding_status anytime to see what's left.\n\n"
+        "training_days_per_week/equipment_available/gym_access_type/injuries_notes). Do "
+        "NOT batch all saves to the end — persist as you go. Call get_onboarding_status "
+        "anytime to see what's left.\n\n"
         "Once you know enough, propose a first programme in plain language, get their "
         "buy-in, then call update_programme — include warmup/cooldown blocks only if they "
         "asked for them. Finally call complete_onboarding to lock it in (you can pass any "

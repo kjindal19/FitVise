@@ -72,6 +72,11 @@ export const Api = {
 
   diet: (params = "") => api<DietLog[]>(`/api/v1/diet${params}`),
   createDiet: (body: unknown) => api<DietLog>("/api/v1/diet", { method: "POST", json: body }),
+  deleteDiet: (id: string) => api(`/api/v1/diet/${id}`, { method: "DELETE" }),
+
+  injuries: () => api<InjuryLog[]>("/api/v1/journal/injuries"),
+  createInjury: (body: unknown) =>
+    api<InjuryLog>("/api/v1/journal/injuries", { method: "POST", json: body }),
 
   metrics: (params = "") => api<BodyMetrics[]>(`/api/v1/metrics${params}`),
   createMetrics: (body: unknown) =>
@@ -85,6 +90,9 @@ export const Api = {
   markRead: (id: string) =>
     api(`/api/v1/notifications/${id}/read`, { method: "POST" }),
   markAllRead: () => api("/api/v1/notifications/read-all", { method: "POST" }),
+  deleteNotification: (id: string) =>
+    api(`/api/v1/notifications/${id}`, { method: "DELETE" }),
+  clearRead: () => api<{ deleted: number }>("/api/v1/notifications/read", { method: "DELETE" }),
   notificationPrefs: () => api<NotificationPrefs>("/api/v1/notifications/preferences"),
   updateNotificationPrefs: (body: Partial<NotificationPrefs>) =>
     api<NotificationPrefs>("/api/v1/notifications/preferences", { method: "PUT", json: body }),
@@ -125,7 +133,17 @@ export interface Profile {
   goal_type: string | null;
   training_modality: string | null;
   current_weight: number | null;
+  height: number | null;
   target_weight: number | null;
+  target_waist: number | null;
+  diet_type: string | null;
+  dietary_restrictions: string | null;
+  training_days_per_week: number | null;
+  preferred_activities: string[] | null;
+  equipment_available: string[] | null;
+  session_length_preference: number | null;
+  gym_access_type: string | null;
+  injuries_notes: string | null;
 }
 export interface OnboardingStatus {
   onboarding_completed: boolean;
@@ -170,14 +188,31 @@ export interface WorkoutLog {
   id: string;
   date: string;
   notes: string | null;
-  sets: { exercise_name: string; weight: number | null; reps: number | null }[];
+  sets: {
+    exercise_name: string;
+    set_number?: number;
+    weight: number | null;
+    reps: number | null;
+  }[];
+}
+export interface InjuryLog {
+  id: string;
+  date: string;
+  body_area: string;
+  injury_type: string | null;
+  severity: number | null;
+  context: string | null;
+  note: string | null;
+  logged_at: string;
 }
 export interface DietLog {
   id: string;
   date: string;
   meal_slot: string;
   description: string | null;
+  protein_quality: string | null;
   flags: string[] | null;
+  logged_at: string;
 }
 export interface BodyMetrics {
   id: string;

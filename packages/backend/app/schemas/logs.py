@@ -50,6 +50,9 @@ class WorkoutLogRead(ORMModel):
 # ---- Diet ----------------------------------------------------------
 class DietLogCreate(BaseModel):
     date: dt.date
+    # When the meal was eaten. Optional; defaults to "now" server-side. The slot
+    # (morning/afternoon/evening/night) is derived from this on the client.
+    logged_at: dt.datetime | None = None
     meal_slot: str
     description: str | None = None
     protein_quality: str | None = None

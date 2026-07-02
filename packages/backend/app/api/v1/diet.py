@@ -36,7 +36,11 @@ def create_diet(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    log = DietLog(user_id=user.id, **payload.model_dump())
+    data = payload.model_dump()
+    if data.get("logged_at") is None:
+        # Let the column default (utcnow) stand rather than forcing NULL.
+        data.pop("logged_at", None)
+    log = DietLog(user_id=user.id, **data)
     db.add(log)
     db.commit()
     db.refresh(log)

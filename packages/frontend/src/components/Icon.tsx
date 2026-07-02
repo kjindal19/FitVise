@@ -59,3 +59,24 @@ export const CheckIcon = ({ size, stroke }: P) => (
     <path d="M20 6L9 17l-5-5" />
   </svg>
 );
+export const FlameIcon = ({ size, stroke }: P) => (
+  <svg {...base(size, stroke)}>
+    <path d="M12 2s5 4.5 5 9a5 5 0 0 1-10 0c0-1.5.7-3 1.5-4C8 9 12 6 12 2z" />
+  </svg>
+);
+export const CloseIcon = ({ size, stroke }: P) => (
+  <svg {...base(size, stroke)} strokeWidth={2.2}>
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);
+export const PlusCircleIcon = ({ size, stroke }: P) => (
+  <svg {...base(size, stroke)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v8M8 12h8" />
+  </svg>
+);
+export const MinusIcon = ({ size, stroke }: P) => (
+  <svg {...base(size, stroke)} strokeWidth={2.2}>
+    <path d="M5 12h14" />
+  </svg>
+);

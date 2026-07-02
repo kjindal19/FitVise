@@ -18,6 +18,7 @@ export default function Settings() {
     queryKey: ["notif-prefs"],
     queryFn: Api.notificationPrefs,
   });
+  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: Api.profile, retry: false });
 
   async function setPref(key: string, value: boolean | string) {
     await Api.updateNotificationPrefs({ [key]: value } as never);
@@ -61,6 +62,60 @@ export default function Settings() {
           <div className="text-base font-semibold text-ink">{user?.name}</div>
           <div className="text-xs text-ink3">{user?.email ?? "self-hosted"}</div>
         </div>
+      </div>
+
+      {/* Your details — surfaced from onboarding / the AI coach */}
+      <div className="mt-3.5 rounded-2xl border border-line bg-surface p-4">
+        <Label>Your details</Label>
+        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+          <Detail label="Age" value={user?.age != null ? `${user.age}` : null} />
+          <Detail label="Gender" value={user?.gender} />
+          <Detail
+            label="Height"
+            value={profile?.height != null ? `${profile.height} ${user?.measurement_unit}` : null}
+          />
+          <Detail
+            label="Weight"
+            value={
+              profile?.current_weight != null
+                ? `${profile.current_weight} ${user?.weight_unit}`
+                : null
+            }
+          />
+          <Detail
+            label="Target weight"
+            value={
+              profile?.target_weight != null
+                ? `${profile.target_weight} ${user?.weight_unit}`
+                : null
+            }
+          />
+          <Detail label="Goal" value={pretty(profile?.goal_type)} />
+          <Detail label="Diet" value={pretty(profile?.diet_type)} />
+          <Detail label="Training" value={pretty(profile?.training_modality)} />
+          <Detail
+            label="Days / week"
+            value={profile?.training_days_per_week != null ? `${profile.training_days_per_week}` : null}
+          />
+        </div>
+        {profile?.equipment_available && profile.equipment_available.length > 0 && (
+          <div className="mt-3.5">
+            <Label>Equipment available</Label>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {profile.equipment_available.map((eq) => (
+                <span
+                  key={eq}
+                  className="rounded-full border border-line bg-surface2 px-2.5 py-1 text-[11px] text-ink2"
+                >
+                  {pretty(eq)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        <p className="mt-3 text-xs leading-relaxed text-ink3">
+          Edit these by chatting with your AI coach — it keeps your profile in sync.
+        </p>
       </div>
 
       {/* Appearance */}
@@ -149,6 +204,20 @@ export default function Settings() {
           Export CSV
         </button>
       </div>
+    </div>
+  );
+}
+
+function pretty(value?: string | null): string | null {
+  if (!value) return null;
+  return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function Detail({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div>
+      <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink3">{label}</div>
+      <div className="mt-0.5 text-sm text-ink">{value ?? "—"}</div>
     </div>
   );
 }

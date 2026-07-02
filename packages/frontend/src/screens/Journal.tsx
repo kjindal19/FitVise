@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Api } from "../lib/api";
 import { mutate } from "../lib/offline";
-import { ScreenHeader } from "../components/ui";
+import { ScreenHeader, Label } from "../components/ui";
 
 type Tab = "energy" | "flags" | "injury";
+const INJURY_TYPES = ["pain", "discomfort", "stiffness", "swelling"];
+const INJURY_CONTEXTS = ["during_workout", "after_workout", "unrelated"];
 const FLAGS = [
   "late_night_eating",
   "sugar_craving",
@@ -104,12 +108,157 @@ export default function Journal() {
         </div>
       )}
 
-      {tab === "injury" && (
-        <div className="mt-3.5 rounded-2xl border border-blueLine bg-blueBg p-3.5 text-[13px] leading-relaxed text-blueInk">
-          Log discomfort here and your coach will see it via MCP before progressing any lift that
-          loads the area. (Full injury form — flesh out next.)
+      {tab === "injury" && <InjuryTab today={today} />}
+    </div>
+  );
+}
+
+function InjuryTab({ today }: { today: string }) {
+  const qc = useQueryClient();
+  const { data: injuries } = useQuery({ queryKey: ["injuries"], queryFn: Api.injuries });
+
+  const [area, setArea] = useState("");
+  const [type, setType] = useState("discomfort");
+  const [severity, setSeverity] = useState(2);
+  const [context, setContext] = useState("during_workout");
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    if (!area.trim() || saving) return;
+    setSaving(true);
+    await mutate("/api/v1/journal/injuries", "POST", {
+      date: today,
+      body_area: area.trim(),
+      injury_type: type,
+      severity,
+      context,
+      note: note.trim() || null,
+    });
+    setArea("");
+    setNote("");
+    setSeverity(2);
+    setSaving(false);
+    qc.invalidateQueries({ queryKey: ["injuries"] });
+  }
+
+  return (
+    <>
+      <div className="mt-3.5 rounded-2xl border border-blueLine bg-blueBg p-3.5 text-[13px] leading-relaxed text-blueInk">
+        Log discomfort here and your coach will see it via MCP before progressing any lift that loads
+        the area.
+      </div>
+
+      <div className="mt-3 rounded-2xl border border-line bg-surface p-4">
+        <Label>Log discomfort</Label>
+
+        <input
+          value={area}
+          onChange={(e) => setArea(e.target.value)}
+          placeholder="Body area — e.g. left knee, lower back"
+          className="mt-2.5 w-full rounded-xl border border-line bg-surface2 p-2.5 text-sm text-ink outline-none"
+        />
+
+        <div className="mt-3 flex gap-1.5">
+          {INJURY_TYPES.map((t) => (
+            <button
+              key={t}
+              onClick={() => setType(t)}
+              className="flex-1 rounded-lg border py-2 text-[12px] font-semibold capitalize"
+              style={{
+                borderColor: type === t ? "var(--accent)" : "var(--line)",
+                background: type === t ? "var(--accentSoft)" : "var(--surface2)",
+                color: type === t ? "var(--accent)" : "var(--ink2)",
+              }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-3.5 flex items-center justify-between">
+          <span className="text-sm text-ink">Severity</span>
+          <div className="flex gap-1.5">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                onClick={() => setSeverity(n)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border-2 font-mono text-sm"
+                style={{
+                  borderColor: severity === n ? "var(--accent)" : "var(--line)",
+                  background: severity === n ? "var(--accentSoft)" : "var(--surface2)",
+                  color: severity === n ? "var(--accent)" : "var(--ink2)",
+                }}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-3.5 flex gap-1.5">
+          {INJURY_CONTEXTS.map((c) => (
+            <button
+              key={c}
+              onClick={() => setContext(c)}
+              className="flex-1 rounded-lg border py-2 text-[11px] font-medium"
+              style={{
+                borderColor: context === c ? "var(--accent)" : "var(--line)",
+                background: context === c ? "var(--accentSoft)" : "var(--surface2)",
+                color: context === c ? "var(--accent)" : "var(--ink2)",
+              }}
+            >
+              {c.replace(/_/g, " ")}
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Anything else your coach should know? (optional)"
+          rows={2}
+          className="mt-3 w-full resize-none rounded-xl border border-line bg-surface2 p-2.5 text-sm text-ink outline-none"
+        />
+
+        <button
+          onClick={save}
+          disabled={!area.trim() || saving}
+          className="mt-3.5 h-11 w-full rounded-xl bg-accent font-semibold text-white disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Log it"}
+        </button>
+      </div>
+
+      {injuries && injuries.length > 0 && (
+        <div className="mt-4">
+          <Label>Recent</Label>
+          <div className="mt-2 flex flex-col gap-2">
+            {injuries.map((inj) => (
+              <div key={inj.id} className="rounded-2xl border border-line bg-surface p-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold capitalize text-ink">{inj.body_area}</span>
+                  <span className="font-mono text-[10px] text-ink3">{inj.date}</span>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-ink2">
+                  {inj.injury_type && <span className="capitalize">{inj.injury_type}</span>}
+                  {inj.severity != null && (
+                    <span className="rounded-full bg-surface2 px-1.5 py-0.5 text-[10px]">
+                      severity {inj.severity}/5
+                    </span>
+                  )}
+                  {inj.context && (
+                    <span className="rounded-full bg-surface2 px-1.5 py-0.5 text-[10px]">
+                      {inj.context.replace(/_/g, " ")}
+                    </span>
+                  )}
+                </div>
+                {inj.note && <div className="mt-1.5 text-[13px] text-ink2">{inj.note}</div>}
+              </div>
+            ))}
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

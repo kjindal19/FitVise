@@ -1,15 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api, type AccessoryItem } from "../lib/api";
 import { mutate } from "../lib/offline";
+import { useAuth } from "../lib/auth";
 import { ScreenHeader } from "../components/ui";
-import { CheckIcon } from "../components/Icon";
+import { MinusIcon } from "../components/Icon";
+import { todaySession } from "../lib/programme";
 
 interface SetRow {
-  weight: number;
+  // null weight = bodyweight / no added load.
+  weight: number | null;
   reps: number;
-  done: boolean;
 }
 interface ExRow {
   name: string;
@@ -17,57 +19,104 @@ interface ExRow {
   sets: SetRow[];
 }
 
+/** Most recent logged { weight, reps } per exercise, for sensible defaults. */
+type LastMap = Record<string, { weight: number | null; reps: number }>;
+
 export default function Workout() {
   const nav = useNavigate();
+  const { user } = useAuth();
+  const weightUnit = user?.weight_unit ?? "kg";
   const { data: programme } = useQuery({
     queryKey: ["programme"],
     queryFn: Api.currentProgramme,
     retry: false,
   });
 
-  const session = programme?.sessions?.[0];
+  // Last ~8 weeks of logs so we can pre-fill each exercise with last time's load.
+  const since = new Date(Date.now() - 56 * 86400_000).toISOString().slice(0, 10);
+  const { data: history } = useQuery({
+    queryKey: ["workouts", "history"],
+    queryFn: () => Api.workouts(`?start_date=${since}`),
+  });
+
+  const session = todaySession(programme);
+
+  const lastByExercise = useMemo<LastMap>(() => {
+    const map: LastMap = {};
+    // history is ordered date desc, so the first time we see an exercise is the
+    // most recent session it appeared in.
+    for (const log of history ?? []) {
+      for (const s of log.sets) {
+        const key = s.exercise_name.toLowerCase();
+        if (!(key in map)) map[key] = { weight: s.weight ?? null, reps: s.reps ?? 10 };
+      }
+    }
+    return map;
+  }, [history]);
 
   const initial = useMemo<ExRow[]>(() => {
     if (!session) return [];
     return session.exercises.map((e) => {
       const reps = e.reps_raw ?? (e.reps_min ? `${e.reps_min}-${e.reps_max ?? e.reps_min}` : "8-12");
+      const last = lastByExercise[e.name.toLowerCase()];
+      const defaultReps = last?.reps ?? e.reps_min ?? 10;
+      const defaultWeight = last ? last.weight : 0;
       return {
         name: e.name,
         target: `${e.sets ?? 3} × ${reps}`,
         sets: Array.from({ length: e.sets ?? 3 }, () => ({
-          weight: 0,
-          reps: e.reps_min ?? 10,
-          done: false,
+          weight: defaultWeight,
+          reps: defaultReps,
         })),
       };
     });
-  }, [session]);
+  }, [session, lastByExercise]);
 
-  const [rows, setRows] = useState<ExRow[]>([]);
+  const [rows, setRows] = useState<ExRow[] | null>(null);
   const [open, setOpen] = useState(0);
-  const ex = rows.length ? rows : initial;
 
-  const update = (ei: number, si: number, patch: Partial<SetRow>) =>
-    setRows(() =>
-      (rows.length ? rows : initial).map((r, i) =>
-        i !== ei ? r : { ...r, sets: r.sets.map((s, j) => (j !== si ? s : { ...s, ...patch })) }
-      )
-    );
+  // Seed editable state once the programme + history have resolved.
+  useEffect(() => {
+    if (initial.length) setRows(initial);
+  }, [initial]);
+
+  const ex = rows ?? initial;
+
+  const setExercise = (ei: number, fn: (r: ExRow) => ExRow) =>
+    setRows((prev) => (prev ?? initial).map((r, i) => (i === ei ? fn(r) : r)));
+
+  const updateSet = (ei: number, si: number, patch: Partial<SetRow>) =>
+    setExercise(ei, (r) => ({
+      ...r,
+      sets: r.sets.map((s, j) => (j === si ? { ...s, ...patch } : s)),
+    }));
+
+  const addSet = (ei: number) =>
+    setExercise(ei, (r) => {
+      // New set inherits the previous set's load (or a sensible default).
+      const prev = r.sets[r.sets.length - 1] ?? { weight: 0, reps: 10 };
+      return { ...r, sets: [...r.sets, { ...prev }] };
+    });
+
+  const removeSet = (ei: number, si: number) =>
+    setExercise(ei, (r) => ({ ...r, sets: r.sets.filter((_, j) => j !== si) }));
 
   async function finish() {
     const today = new Date().toISOString().slice(0, 10);
-    const sets = ex.flatMap((e, _ei) =>
-      e.sets
-        .filter((s) => s.done)
-        .map((s, idx) => ({
-          exercise_name: e.name,
-          set_number: idx + 1,
-          weight: s.weight,
-          reps: s.reps,
-        }))
+    const sets = ex.flatMap((e) =>
+      e.sets.map((s, idx) => ({
+        exercise_name: e.name,
+        set_number: idx + 1,
+        weight: s.weight, // null = bodyweight
+        reps: s.reps,
+      }))
     );
+    if (sets.length === 0) {
+      alert("Add at least one set before finishing.");
+      return;
+    }
     const synced = await mutate("/api/v1/workouts", "POST", {
-      session_id: programme?.sessions?.[0]?.id ?? null,
+      session_id: session?.id ?? null,
       date: today,
       completed_at: new Date().toISOString(),
       sets,
@@ -101,7 +150,7 @@ export default function Workout() {
         {ex.map((row, ei) => (
           <div key={ei} className="overflow-hidden rounded-2xl border border-line bg-surface">
             <button
-              onClick={() => setOpen(ei)}
+              onClick={() => setOpen(open === ei ? -1 : ei)}
               className="flex w-full items-center gap-3 p-4 text-left"
             >
               <div className="flex-1">
@@ -109,29 +158,45 @@ export default function Workout() {
                 <div className="mt-0.5 font-mono text-xs text-ink3">{row.target}</div>
               </div>
               <span className="font-mono text-xs text-ink2">
-                {row.sets.filter((s) => s.done).length}/{row.sets.length}
+                {row.sets.length} {row.sets.length === 1 ? "set" : "sets"}
               </span>
             </button>
             {open === ei && (
-              <div className="border-t border-line px-4 pb-4">
+              <div className="border-t border-line px-4 pb-3 pt-1">
+                <div className="flex items-center gap-2 px-1 pb-1 font-mono text-[10px] uppercase tracking-wide text-ink3">
+                  <span className="w-4">#</span>
+                  <span className="flex-1">Weight</span>
+                  <span className="w-16 text-center">Reps</span>
+                  <span className="w-8" />
+                </div>
                 {row.sets.map((s, si) => (
-                  <div key={si} className="flex items-center gap-1.5 border-b border-line py-2.5">
-                    <span className="w-3 font-mono text-[11px] text-ink3">{si + 1}</span>
-                    <Stepper value={s.weight} unit="kg" onChange={(v) => update(ei, si, { weight: v })} step={2.5} />
-                    <span className="text-xs text-ink3">×</span>
-                    <Stepper value={s.reps} onChange={(v) => update(ei, si, { reps: v })} step={1} />
+                  <div key={si} className="flex items-center gap-2 border-b border-line py-2.5 last:border-b-0">
+                    <span className="w-4 font-mono text-[11px] text-ink3">{si + 1}</span>
+                    <WeightInput
+                      value={s.weight}
+                      unit={weightUnit}
+                      onChange={(v) => updateSet(ei, si, { weight: v })}
+                    />
+                    <NumberInput
+                      value={s.reps}
+                      onChange={(v) => updateSet(ei, si, { reps: v })}
+                      className="w-16"
+                    />
                     <button
-                      onClick={() => update(ei, si, { done: !s.done })}
-                      className="ml-auto flex h-9 w-9 items-center justify-center rounded-xl border-2"
-                      style={{
-                        borderColor: s.done ? "var(--green)" : "var(--line)",
-                        background: s.done ? "var(--green)" : "transparent",
-                      }}
+                      onClick={() => removeSet(ei, si)}
+                      aria-label="Remove set"
+                      className="flex h-9 w-8 items-center justify-center rounded-lg border border-line bg-surface2"
                     >
-                      <CheckIcon size={17} stroke={s.done ? "#fff" : "var(--ink3)"} />
+                      <MinusIcon size={16} stroke="var(--ink3)" />
                     </button>
                   </div>
                 ))}
+                <button
+                  onClick={() => addSet(ei)}
+                  className="mt-3 h-10 w-full rounded-xl border border-dashed border-line text-[13px] font-medium text-ink2"
+                >
+                  + Add set
+                </button>
               </div>
             )}
           </div>
@@ -191,7 +256,11 @@ function AccessoryBlock({
                 background: done[i] ? accent : "transparent",
               }}
             >
-              <CheckIcon size={15} stroke={done[i] ? "#fff" : "var(--ink3)"} />
+              {done[i] && (
+                <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
+                  <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
             </span>
             <div className="flex-1">
               <div
@@ -213,33 +282,72 @@ function AccessoryBlock({
   );
 }
 
-function Stepper({
+/**
+ * Weight entry: free decimal input (e.g. 4, 6, 7.5) with −/+ nudge buttons.
+ * An empty value means bodyweight (logged as null) and shows a "BW" hint.
+ */
+function WeightInput({
   value,
-  onChange,
-  step,
   unit,
+  onChange,
 }: {
-  value: number;
-  onChange: (v: number) => void;
-  step: number;
-  unit?: string;
+  value: number | null;
+  unit: string;
+  onChange: (v: number | null) => void;
 }) {
+  const round = (n: number) => Math.round(n * 100) / 100;
+  const nudge = (delta: number) => onChange(round(Math.max(0, (value ?? 0) + delta)));
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-1 items-center gap-1">
       <button
-        onClick={() => onChange(Math.max(0, Math.round((value - step) * 100) / 100))}
-        className="h-9 w-8 rounded-lg border border-line bg-surface2 text-lg text-ink"
+        onClick={() => nudge(-2.5)}
+        className="h-9 w-8 shrink-0 rounded-lg border border-line bg-surface2 text-lg text-ink"
       >
         −
       </button>
-      <span className="w-8 text-center font-mono text-[15px] font-semibold text-ink">{value}</span>
+      <input
+        inputMode="decimal"
+        value={value ?? ""}
+        placeholder="BW"
+        onChange={(e) => {
+          const raw = e.target.value.trim();
+          if (raw === "") return onChange(null);
+          const n = Number(raw);
+          if (!Number.isNaN(n)) onChange(n);
+        }}
+        className="w-full min-w-0 rounded-lg border border-line bg-surface2 py-1.5 text-center font-mono text-[15px] font-semibold text-ink outline-none"
+      />
       <button
-        onClick={() => onChange(Math.round((value + step) * 100) / 100)}
-        className="h-9 w-8 rounded-lg border border-line bg-surface2 text-lg text-ink"
+        onClick={() => nudge(2.5)}
+        className="h-9 w-8 shrink-0 rounded-lg border border-line bg-surface2 text-lg text-ink"
       >
         +
       </button>
-      {unit && <span className="text-[11px] text-ink3">{unit}</span>}
+      <span className="shrink-0 text-[11px] text-ink3">{unit}</span>
     </div>
+  );
+}
+
+function NumberInput({
+  value,
+  onChange,
+  className = "",
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  className?: string;
+}) {
+  return (
+    <input
+      inputMode="numeric"
+      value={Number.isFinite(value) ? value : ""}
+      onChange={(e) => {
+        const raw = e.target.value.trim();
+        if (raw === "") return onChange(0);
+        const n = parseInt(raw, 10);
+        if (!Number.isNaN(n)) onChange(n);
+      }}
+      className={`rounded-lg border border-line bg-surface2 py-1.5 text-center font-mono text-[15px] font-semibold text-ink outline-none ${className}`}
+    />
   );
 }

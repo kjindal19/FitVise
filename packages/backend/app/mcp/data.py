@@ -34,6 +34,7 @@ def profile_dict(user: User) -> dict:
         "height": getattr(p, "height", None),
         "goal_type": getattr(p, "goal_type", None),
         "target_weight": getattr(p, "target_weight", None),
+        "target_waist": getattr(p, "target_waist", None),
         "diet_type": getattr(p, "diet_type", None),
         "dietary_restrictions": getattr(p, "dietary_restrictions", None),
         "eating_patterns": getattr(p, "eating_patterns", None),
@@ -41,6 +42,9 @@ def profile_dict(user: User) -> dict:
         "medical_notes": getattr(p, "medical_notes", None),
         "training_modality": getattr(p, "training_modality", None),
         "training_days_per_week": getattr(p, "training_days_per_week", None),
+        "session_length_preference": getattr(p, "session_length_preference", None),
+        "equipment_available": getattr(p, "equipment_available", None),
+        "gym_access_type": getattr(p, "gym_access_type", None),
         "injuries_notes": getattr(p, "injuries_notes", None),
         "preferences_notes": getattr(p, "preferences_notes", None),
     }
