@@ -1,0 +1,94 @@
+# =====================================================================
+# FitVise — PRODUCTION stack (VPS behind CloudPanel reverse proxy)
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Differences vs. the dev docker-compose.yml:
+#   * Two networks:
+#       - fitvise_internal  (internal: true)  db <-> backend, NO internet,
+#                                             NOT reachable from the host.
+#       - fitvise_edge      (bridge)          the only network with published
+#                                             ports; carries the services the
+#                                             host reverse proxy talks to.
+#   * db has NO published port — it is reachable only by the backend over
+#     the internal network.
+#   * Published ports are bound to 127.0.0.1 so they are visible ONLY to the
+#     host (CloudPanel/nginx), never to the public internet directly.
+#   * No source bind-mounts and no --reload; runs the baked image with a
+#     single uvicorn worker (the in-process notification scheduler + MCP
+#     session manager must not be duplicated across workers).
+#
+# NOTE: The backend serves the REST API, the MCP endpoint (/mcp) and the
+#       OAuth 2.1 AS on the SAME port. "Exposing MCP" therefore means
+#       exposing the backend — the browser PWA also calls it directly.
+# =====================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fitvise}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-fitvise}
+    volumes:
+      - fitvise_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fitvise} -d ${POSTGRES_DB:-fitvise}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Private only — no host port, only on the internal network.
+    networks:
+      - fitvise_internal
+
+  backend:
+    build:
+      context: ./packages/backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Reach the db over the internal network.
+      FITVISE_DB_URL: ${FITVISE_DB_URL:-postgresql+psycopg://fitvise:fitvise@db:5432/fitvise}
+    volumes:
+      # App data (SQLite file / uploads) persists; NO source mount in prod.
+      - fitvise_appdata:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - fitvise_internal   # -> db
+      - fitvise_edge       # -> reverse proxy + outbound internet (web push)
+    # Production command: no reload, single worker (scheduler-safe).
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "*"]
+    # Bound to loopback: only the host (CloudPanel) can reach it.
+    ports:
+      - "127.0.0.1:${FITVISE_BACKEND_HOST_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ./packages/frontend
+      args:
+        # Public URL of the backend the BROWSER will call (baked at build).
+        # Must be the https domain CloudPanel maps to the backend.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:?set VITE_API_BASE_URL to the public backend URL}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - fitvise_edge
+    ports:
+      - "127.0.0.1:${FITVISE_FRONTEND_HOST_PORT:-8080}:80"
+
+networks:
+  # db <-> backend private link. internal: true => no host access, no internet.
+  fitvise_internal:
+    driver: bridge
+    internal: true
+  # The only externally-published network (via loopback ports above).
+  fitvise_edge:
+    driver: bridge
+
+volumes:
+  fitvise_pgdata:
+  fitvise_appdata:
