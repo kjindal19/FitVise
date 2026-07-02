@@ -6,6 +6,18 @@ import type { Programme, ProgrammeSession } from "./api";
 
 export const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+/**
+ * YYYY-MM-DD from a Date's LOCAL calendar components. Use this for anything that
+ * represents a day the user experiences — never `toISOString().slice(0,10)`, which
+ * converts to UTC and shifts the date across midnight in non-UTC timezones.
+ */
+export function toISODate(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /** Today's weekday in the backend's scheme (0=Mon … 6=Sun). */
 export function todayDow(now = new Date()): number {
   return (now.getDay() + 6) % 7;

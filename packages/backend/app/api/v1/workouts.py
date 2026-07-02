@@ -39,18 +39,29 @@ def create_workout(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    log = WorkoutLog(
-        user_id=user.id,
-        session_id=payload.session_id,
-        date=payload.date,
-        started_at=payload.started_at,
-        completed_at=payload.completed_at,
-        notes=payload.notes,
+    # Upsert by (user, date): the first save of a day creates the log; every save
+    # after edits that same entry rather than piling up duplicates. Last-write-wins,
+    # which also keeps replayed offline POSTs idempotent per day (PRD §3.1).
+    log = (
+        db.query(WorkoutLog)
+        .filter(
+            WorkoutLog.user_id == user.id,
+            WorkoutLog.date == payload.date,
+            WorkoutLog.deleted_at.is_(None),
+        )
+        .first()
     )
-    db.add(log)
-    db.flush()
-    for s in payload.sets:
-        db.add(WorkoutSetLog(workout_log_id=log.id, **s.model_dump()))
+    if log is None:
+        log = WorkoutLog(user_id=user.id, date=payload.date)
+        db.add(log)
+
+    log.session_id = payload.session_id
+    log.started_at = payload.started_at
+    log.completed_at = payload.completed_at
+    log.notes = payload.notes
+    # Replace the day's sets wholesale; delete-orphan cascade clears the old rows.
+    log.sets = [WorkoutSetLog(**s.model_dump()) for s in payload.sets]
+
     db.commit()
     db.refresh(log)
     return log

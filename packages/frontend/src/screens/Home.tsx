@@ -4,7 +4,7 @@ import { Api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Card, Label, NotificationBell } from "../components/ui";
 import { CheckIcon, CoachIcon, FlameIcon } from "../components/Icon";
-import { DAYS, currentWeekSessions, todayDow, todaySession } from "../lib/programme";
+import { DAYS, currentWeekSessions, toISODate, todayDow, todaySession } from "../lib/programme";
 
 export default function Home() {
   const nav = useNavigate();
@@ -16,6 +16,14 @@ export default function Home() {
   });
   const { data: metrics } = useQuery({ queryKey: ["metrics"], queryFn: () => Api.metrics() });
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: Api.profile, retry: false });
+
+  // Today's recovery log — used to prompt for sleep until it's been entered.
+  const todayISO = toISODate();
+  const { data: recovery } = useQuery({
+    queryKey: ["recovery", todayISO],
+    queryFn: () => Api.recovery(`?start_date=${todayISO}&end_date=${todayISO}`),
+  });
+  const sleepLogged = (recovery ?? []).some((r) => r.sleep_hours != null);
 
   // Pull a month of workout logs to derive the week strip + streak.
   const monthAgo = new Date(Date.now() - 31 * 86400_000).toISOString().slice(0, 10);
@@ -46,13 +54,14 @@ export default function Home() {
   const week = DAYS.map((label, i) => {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
-    const iso = date.toISOString().slice(0, 10);
+    const iso = toISODate(date);
     const hasSession = sessions.some((s) => s.day_of_week === i);
     const isDone = doneDates.has(iso) && (hasSession || i <= dow);
     return { label, dow: i, isDone, isNow: i === dow, hasSession };
   });
   const plannedCount = sessions.filter((s) => s.day_of_week != null).length || sessions.length;
   const doneCount = week.filter((d) => d.isDone).length;
+  const loggedToday = doneDates.has(todayISO);
 
   const streak = computeStreak(workouts);
 
@@ -104,7 +113,7 @@ export default function Home() {
             onClick={() => nav("/workout")}
             className="h-11 rounded-xl bg-accent px-5 text-[15px] font-semibold text-white"
           >
-            Start workout
+            {loggedToday ? "Update workout" : "Start workout"}
           </button>
           <button
             onClick={() => nav("/programme")}
@@ -115,6 +124,21 @@ export default function Home() {
           </button>
         </div>
       </div>
+
+      {/* Sleep prompt — hidden once today's sleep is logged */}
+      {!sleepLogged && (
+        <button
+          onClick={() => nav("/journal")}
+          className="mt-3.5 flex w-full items-center gap-3 rounded-2xl border border-line bg-surface p-4 text-left"
+        >
+          <span className="text-xl">🌙</span>
+          <div className="flex-1">
+            <div className="text-sm font-semibold text-ink">Log last night's sleep</div>
+            <div className="mt-0.5 text-xs text-ink2">Add your sleep hours for today</div>
+          </div>
+          <span className="text-ink3">›</span>
+        </button>
+      )}
 
       {/* Streak + check-in */}
       <div className="mt-3.5 flex gap-3">
@@ -145,9 +169,12 @@ export default function Home() {
         <Card className="mt-3.5">
           <div className="mb-3 flex items-baseline justify-between">
             <Label>This week</Label>
-            <span className="text-xs text-ink2">
-              <b className="text-ink">{doneCount}</b> of {plannedCount} sessions done
-            </span>
+            <button onClick={() => nav("/workout/history")} className="text-xs text-accent">
+              History
+            </button>
+          </div>
+          <div className="mb-3 -mt-2 text-xs text-ink2">
+            <b className="text-ink">{doneCount}</b> of {plannedCount} sessions done
           </div>
           <div className="flex gap-1.5">
             {week.map((d) => (
@@ -206,11 +233,11 @@ function computeStreak(workouts?: { date: string }[]): number {
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
   // Allow the streak to hold if today's session isn't logged yet.
-  if (!days.has(cursor.toISOString().slice(0, 10))) {
+  if (!days.has(toISODate(cursor))) {
     cursor.setDate(cursor.getDate() - 1);
   }
   let streak = 0;
-  while (days.has(cursor.toISOString().slice(0, 10))) {
+  while (days.has(toISODate(cursor))) {
     streak++;
     cursor.setDate(cursor.getDate() - 1);
   }

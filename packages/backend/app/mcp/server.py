@@ -148,7 +148,7 @@ def get_session_plan(
 @mcp_server.tool()
 def get_workout_logs(ctx: Context, start_date: str | None = None, end_date: str | None = None) -> dict:
     """Return logged workout sessions as exercise × weight × reps per set. Defaults
-    to the last 4 weeks unless a date range (YYYY-MM-DD) is given — avoid pulling
+    to the last 2 weeks unless a date range (YYYY-MM-DD) is given — avoid pulling
     all-time history to keep context lean."""
     with SessionLocal() as db:
         try:
@@ -157,7 +157,7 @@ def get_workout_logs(ctx: Context, start_date: str | None = None, end_date: str 
             return mcp_err(str(e), "UNAUTHORIZED")
         start = _parse_date(start_date) or _default_start(2)
         rows = data.workout_logs_dicts(db, user.id, start, _parse_date(end_date))
-        return mcp_ok(rows, user_id=user.id, context_note="Last 4 weeks unless a range was specified.")
+        return mcp_ok(rows, user_id=user.id, context_note="Last 2 weeks unless a range was specified.")
 
 
 @mcp_server.tool()
@@ -627,13 +627,28 @@ def onboard() -> str:
 
 @mcp_server.prompt()
 def weekly_checkin() -> str:
-    """Conduct the weekly check-in and record the summary + next-week targets."""
+    """Conduct the full weekly check-in: review training, diet, behaviour and
+    injuries, record the summary + next-week targets, and revise the plan if needed."""
     return (
-        "Run the user's FitVise weekly check-in.\n"
-        "1. Call get_checkin_history, get_workout_logs, and get_body_metrics for context.\n"
-        "2. Assess progress — prioritise the waist trend over scale weight.\n"
-        "3. Write a short, encouraging summary and call write_checkin_summary.\n"
-        "4. Call set_weekly_targets with next week's weight/behaviour/training goals."
+        "Run the user's FitVise weekly check-in — the one weekly ritual that reviews "
+        "everything and closes the loop.\n\n"
+        "1. LOAD CONTEXT. Call get_checkin_history, get_workout_logs, get_body_metrics, "
+        "get_diet_logs, get_behaviour_flags, and get_injury_log so you're grounded in the "
+        "whole week, not just training.\n"
+        "2. ASSESS. Judge progress against their goal — prioritise the waist trend over "
+        "scale weight. Weave in diet and behaviour patterns and note any injuries or "
+        "discomfort that should change how they train.\n"
+        "3. REFLECT BACK. Surface 2–3 gentle, actionable patterns — wins first, then one "
+        "nudge. Never present behaviour flags (slips, cravings, late-night eating) back as "
+        "raw counts; talk about them like a coach who noticed, not a spreadsheet.\n"
+        "4. RECORD. Write a short, encouraging summary with write_checkin_summary, then call "
+        "set_weekly_targets with next week's weight/behaviour/training goals.\n"
+        "5. ADJUST THE PLAN IF WARRANTED. If the user wants a change, or you judge one is "
+        "needed (an injury to work around, a stalled lift, under-recovery, or life getting "
+        "busy), propose the specific change in plain language and get their explicit yes "
+        "FIRST. Only after they confirm, call get_current_programme and then update_programme "
+        "with the full revised plan (fix and retry if it returns VALIDATION_FAILED). Never "
+        "rewrite the programme without confirming the change with the user."
     )
 
 
@@ -643,18 +658,7 @@ def change_workout() -> str:
     return (
         "Help the user change their training programme.\n"
         "1. Call get_current_programme to load the active plan.\n"
-        "2. Discuss the requested change.\n"
+        "2. Discuss the requested change and confirm it with the user.\n"
         "3. Call update_programme with the full revised programme (it will be "
         "validated; fix and retry if it returns VALIDATION_FAILED)."
-    )
-
-
-@mcp_server.prompt()
-def log_review() -> str:
-    """Review recent logs and surface patterns gently."""
-    return (
-        "Review the user's recent FitVise logs.\n"
-        "1. Call get_workout_logs, get_diet_logs, and get_behaviour_flags.\n"
-        "2. Identify 2–3 gentle, actionable patterns — wins first, then one nudge.\n"
-        "Never present behaviour flags back as raw counts."
     )

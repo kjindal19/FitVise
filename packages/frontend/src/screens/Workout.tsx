@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Api, type AccessoryItem } from "../lib/api";
+import { Api, type AccessoryItem, type WorkoutLog } from "../lib/api";
 import { mutate } from "../lib/offline";
 import { useAuth } from "../lib/auth";
 import { ScreenHeader } from "../components/ui";
 import { MinusIcon } from "../components/Icon";
-import { todaySession } from "../lib/programme";
+import { toISODate, todaySession } from "../lib/programme";
 
 interface SetRow {
   // null weight = bodyweight / no added load.
@@ -22,10 +22,37 @@ interface ExRow {
 /** Most recent logged { weight, reps } per exercise, for sensible defaults. */
 type LastMap = Record<string, { weight: number | null; reps: number }>;
 
+/** Rebuild editable rows from a saved log, grouping its sets by exercise. */
+function rowsFromLog(log: WorkoutLog): ExRow[] {
+  const order: string[] = [];
+  const byName = new Map<string, SetRow[]>();
+  const sorted = [...log.sets].sort((a, b) => (a.set_number ?? 0) - (b.set_number ?? 0));
+  for (const s of sorted) {
+    if (!byName.has(s.exercise_name)) {
+      byName.set(s.exercise_name, []);
+      order.push(s.exercise_name);
+    }
+    byName.get(s.exercise_name)!.push({ weight: s.weight ?? null, reps: s.reps ?? 0 });
+  }
+  return order.map((name) => {
+    const sets = byName.get(name)!;
+    return { name, target: `${sets.length} ${sets.length === 1 ? "set" : "sets"}`, sets };
+  });
+}
+
 export default function Workout() {
   const nav = useNavigate();
+  const [params] = useSearchParams();
   const { user } = useAuth();
   const weightUnit = user?.weight_unit ?? "kg";
+
+  // The day being logged. Defaults to today; a ?date=YYYY-MM-DD opens a past
+  // session (from the history screen) for viewing/editing.
+  const dateISO = params.get("date") ?? toISODate();
+  const isToday = dateISO === toISODate();
+  // Parse with an explicit time so it's the local day, not UTC midnight.
+  const dateObj = useMemo(() => new Date(`${dateISO}T00:00:00`), [dateISO]);
+
   const { data: programme } = useQuery({
     queryKey: ["programme"],
     queryFn: Api.currentProgramme,
@@ -33,13 +60,17 @@ export default function Workout() {
   });
 
   // Last ~8 weeks of logs so we can pre-fill each exercise with last time's load.
-  const since = new Date(Date.now() - 56 * 86400_000).toISOString().slice(0, 10);
+  // Extend the window back to the selected date so an older log still loads to edit;
+  // prefill still picks the most-recent set since the list is ordered date-desc.
+  const eightWeeksAgo = toISODate(new Date(Date.now() - 56 * 86400_000));
+  const since = dateISO < eightWeeksAgo ? dateISO : eightWeeksAgo;
   const { data: history } = useQuery({
-    queryKey: ["workouts", "history"],
+    queryKey: ["workouts", "history", since],
     queryFn: () => Api.workouts(`?start_date=${since}`),
   });
 
-  const session = todaySession(programme);
+  const existing = (history ?? []).find((w) => w.date === dateISO);
+  const session = todaySession(programme, dateObj);
 
   const lastByExercise = useMemo<LastMap>(() => {
     const map: LastMap = {};
@@ -55,6 +86,8 @@ export default function Workout() {
   }, [history]);
 
   const initial = useMemo<ExRow[]>(() => {
+    // An existing log for this date wins — we're editing what was saved.
+    if (existing && existing.sets.length) return rowsFromLog(existing);
     if (!session) return [];
     return session.exercises.map((e) => {
       const reps = e.reps_raw ?? (e.reps_min ? `${e.reps_min}-${e.reps_max ?? e.reps_min}` : "8-12");
@@ -70,7 +103,7 @@ export default function Workout() {
         })),
       };
     });
-  }, [session, lastByExercise]);
+  }, [existing, session, lastByExercise]);
 
   const [rows, setRows] = useState<ExRow[] | null>(null);
   const [open, setOpen] = useState(0);
@@ -102,7 +135,6 @@ export default function Workout() {
     setExercise(ei, (r) => ({ ...r, sets: r.sets.filter((_, j) => j !== si) }));
 
   async function finish() {
-    const today = new Date().toISOString().slice(0, 10);
     const sets = ex.flatMap((e) =>
       e.sets.map((s, idx) => ({
         exercise_name: e.name,
@@ -117,11 +149,12 @@ export default function Workout() {
     }
     const synced = await mutate("/api/v1/workouts", "POST", {
       session_id: session?.id ?? null,
-      date: today,
+      date: dateISO,
       completed_at: new Date().toISOString(),
       sets,
     });
-    alert(synced ? "Workout saved ✓" : "Saved offline — will sync when online");
+    const verb = existing ? "updated" : "saved";
+    alert(synced ? `Workout ${verb} ✓` : "Saved offline — will sync when online");
     nav("/");
   }
 
@@ -130,10 +163,24 @@ export default function Workout() {
       <div className="px-5">
         <ScreenHeader
           title={session?.label ?? session?.session_type ?? "Workout"}
-          subtitle="Active session · tap to log"
+          subtitle={
+            isToday
+              ? "Active session · tap to log"
+              : dateObj.toLocaleDateString(undefined, {
+                  weekday: "long",
+                  month: "short",
+                  day: "numeric",
+                })
+          }
           back
           bell={false}
         />
+        <button
+          onClick={() => nav("/workout/history")}
+          className="mt-2 text-xs font-medium text-accent"
+        >
+          Past workouts ›
+        </button>
       </div>
 
       {ex.length === 0 && (
@@ -216,7 +263,7 @@ export default function Workout() {
             onClick={finish}
             className="h-13 w-full rounded-2xl bg-accent py-3.5 text-base font-semibold text-white"
           >
-            Finish workout
+            {existing ? "Update workout" : "Finish workout"}
           </button>
         </div>
       )}

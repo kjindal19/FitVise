@@ -7,6 +7,7 @@ import LogMenu from "./components/LogMenu";
 
 import Home from "./screens/Home";
 import Workout from "./screens/Workout";
+import WorkoutHistory from "./screens/WorkoutHistory";
 import Diet from "./screens/Diet";
 import Metrics from "./screens/Metrics";
 import Progress from "./screens/Progress";
@@ -51,6 +52,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/workout" element={<Workout />} />
+          <Route path="/workout/history" element={<WorkoutHistory />} />
           <Route path="/diet" element={<Diet />} />
           <Route path="/metrics" element={<Metrics />} />
           <Route path="/progress" element={<Progress />} />

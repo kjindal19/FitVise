@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Api } from "../lib/api";
 import { mutate } from "../lib/offline";
 import { ScreenHeader, Label } from "../components/ui";
+import { toISODate } from "../lib/programme";
 
 type Tab = "energy" | "flags" | "injury";
 const INJURY_TYPES = ["pain", "discomfort", "stiffness", "swelling"];
@@ -18,7 +19,7 @@ const FLAGS = [
 
 export default function Journal() {
   const [tab, setTab] = useState<Tab>("energy");
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toISODate();
   const [energy, setEnergy] = useState(3);
   const [sleep, setSleep] = useState("7.5");
 

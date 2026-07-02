@@ -4,6 +4,7 @@ import { Api, type DietLog } from "../lib/api";
 import { mutate } from "../lib/offline";
 import { ScreenHeader, Label } from "../components/ui";
 import { CloseIcon } from "../components/Icon";
+import { toISODate } from "../lib/programme";
 
 const FLAGS = ["high_protein", "late_night_eating", "sugar_craving", "skipped_meal"];
 
@@ -26,7 +27,7 @@ function timeLabel(iso: string): string {
 }
 
 export default function Diet() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toISODate();
   const qc = useQueryClient();
   const { data: logs } = useQuery({
     queryKey: ["diet", today],

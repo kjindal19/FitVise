@@ -70,6 +70,8 @@ export const Api = {
   createWorkout: (body: unknown) =>
     api<WorkoutLog>("/api/v1/workouts", { method: "POST", json: body }),
 
+  recovery: (params = "") => api<RecoveryLog[]>(`/api/v1/recovery${params}`),
+
   diet: (params = "") => api<DietLog[]>(`/api/v1/diet${params}`),
   createDiet: (body: unknown) => api<DietLog>("/api/v1/diet", { method: "POST", json: body }),
   deleteDiet: (id: string) => api(`/api/v1/diet/${id}`, { method: "DELETE" }),
@@ -205,6 +207,16 @@ export interface InjuryLog {
   note: string | null;
   logged_at: string;
 }
+export interface RecoveryLog {
+  id: string;
+  date: string;
+  energy_level: number | null;
+  sleep_hours: number | null;
+  soreness_level: string | null;
+  soreness_location: string | null;
+  stress_level: number | null;
+  logged_at: string;
+}
 export interface DietLog {
   id: string;
   date: string;
@@ -219,6 +231,12 @@ export interface BodyMetrics {
   logged_at: string;
   weight: number | null;
   waist_cm: number | null;
+  hip_cm: number | null;
+  chest_cm: number | null;
+  left_arm_cm: number | null;
+  right_thigh_cm: number | null;
+  body_fat_pct: number | null;
+  notes: string | null;
 }
 export interface CheckIn {
   id: string;
