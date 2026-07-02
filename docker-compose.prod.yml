@@ -46,10 +46,25 @@ services:
     build:
       context: ./packages/backend
     restart: unless-stopped
-    env_file: .env
+    # No env_file — Portainer does not create a .env file next to the stack.
+    # Every value below is filled from Portainer's "Environment variables" UI
+    # (or a .env file when using `docker compose` on the host directly).
     environment:
-      # Reach the db over the internal network.
+      FITVISE_SECRET_KEY: ${FITVISE_SECRET_KEY:?set FITVISE_SECRET_KEY}
+      FITVISE_AUTH_MODE: ${FITVISE_AUTH_MODE:-multi_user}
+      FITVISE_BASE_URL: ${FITVISE_BASE_URL:?set FITVISE_BASE_URL to the public https backend URL}
+      FITVISE_PORT: "8000"
+      FITVISE_DB_TYPE: ${FITVISE_DB_TYPE:-postgres}
+      FITVISE_DB_PATH: ${FITVISE_DB_PATH:-/data/fitvise.sqlite3}
+      # Reach the db over the internal network. Password must match POSTGRES_PASSWORD.
       FITVISE_DB_URL: ${FITVISE_DB_URL:-postgresql+psycopg://fitvise:fitvise@db:5432/fitvise}
+      FITVISE_MCP_API_KEY: ${FITVISE_MCP_API_KEY:-}
+      FITVISE_OAUTH_ISSUER_URL: ${FITVISE_OAUTH_ISSUER_URL:?set FITVISE_OAUTH_ISSUER_URL to the public https backend URL}
+      FITVISE_OAUTH_SIGNING_KEY: ${FITVISE_OAUTH_SIGNING_KEY:?set FITVISE_OAUTH_SIGNING_KEY}
+      FITVISE_VAPID_PUBLIC_KEY: ${FITVISE_VAPID_PUBLIC_KEY:-}
+      FITVISE_VAPID_PRIVATE_KEY: ${FITVISE_VAPID_PRIVATE_KEY:-}
+      FITVISE_VAPID_SUBJECT: ${FITVISE_VAPID_SUBJECT:-mailto:admin@example.com}
+      FITVISE_DEFAULT_TIMEZONE: ${FITVISE_DEFAULT_TIMEZONE:-UTC}
     volumes:
       # App data (SQLite file / uploads) persists; NO source mount in prod.
       - fitvise_appdata:/data
