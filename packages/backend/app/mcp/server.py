@@ -20,6 +20,34 @@ from app.schemas.common import mcp_err, mcp_ok
 from app.notifications import triggers
 
 
+def _transport_security():
+    """Allow the public host(s) through FastMCP's DNS-rebinding protection.
+
+    The Streamable HTTP transport validates the request ``Host`` (and browser
+    ``Origin``) against an allow-list; behind a reverse proxy the forwarded Host
+    is our public domain, which must be listed or every /mcp request 421s. We
+    derive it from the configured base_url/issuer (no extra env var) and keep
+    localhost for in-container health checks and local dev.
+    """
+    from urllib.parse import urlparse
+
+    from mcp.server.transport_security import TransportSecuritySettings
+
+    hosts: set[str] = {"localhost", "127.0.0.1",
+                       f"localhost:{settings.port}", f"127.0.0.1:{settings.port}"}
+    origins: set[str] = set()
+    for url in (settings.base_url, settings.issuer):
+        parsed = urlparse(url)
+        if parsed.netloc:
+            hosts.add(parsed.netloc)
+            origins.add(f"{parsed.scheme}://{parsed.netloc}")
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=sorted(hosts),
+        allowed_origins=sorted(origins),
+    )
+
+
 def _auth_kwargs() -> dict:
     """In multi_user / managed mode, wire OAuth bearer enforcement into the
     transport so unauthenticated clients get 401 + ``WWW-Authenticate`` (RFC 9728)
@@ -55,6 +83,7 @@ mcp_server = FastMCP(
     ),
     stateless_http=True,
     streamable_http_path="/",
+    transport_security=_transport_security(),
     **_auth_kwargs(),
 )
 
