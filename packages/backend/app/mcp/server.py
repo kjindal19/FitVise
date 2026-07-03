@@ -42,9 +42,9 @@ def _transport_security():
             hosts.add(parsed.netloc)
             origins.add(f"{parsed.scheme}://{parsed.netloc}")
     return TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=sorted(hosts),
-        allowed_origins=sorted(origins),
+        enable_dns_rebinding_protection=False
+        # allowed_hosts=sorted(hosts),
+        # allowed_origins=sorted(origins),
     )
 
 
